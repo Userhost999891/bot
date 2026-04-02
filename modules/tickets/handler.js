@@ -31,7 +31,7 @@ async function sendTicketPanel(channel, guild) {
     .setTimestamp();
 
   const options = categories.map(cat => ({
-    label: cat.name,
+    label: `〢${cat.name}`,
     value: `ticket_cat_${cat.id}`,
     description: cat.description || `Ticket: ${cat.name}`,
     emoji: cat.emoji || '📋'
