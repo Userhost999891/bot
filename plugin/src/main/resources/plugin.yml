@@ -1,0 +1,18 @@
+name: NMC-Nagroda
+version: '2.0'
+main: pl.naris.nagroda.NagrodaPlugin
+api-version: '1.21'
+author: kavan
+description: Plugin nagród za weryfikację Discord — łączy się z MySQL i NarisMC Core Bot
+
+commands:
+  nagroda:
+    description: Zarządzanie pluginem nagród
+    usage: /nagroda <setup|reload|info>
+    permission: nagroda.admin
+    aliases: [reward]
+
+permissions:
+  nagroda.admin:
+    description: Pozwala na zarządzanie pluginem nagród
+    default: op

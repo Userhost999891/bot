@@ -1,0 +1,5 @@
+pl\naris\nagroda\data\MySQLManager$PendingReward.class
+pl\naris\nagroda\data\MySQLManager.class
+pl\naris\nagroda\reward\RewardChecker.class
+pl\naris\nagroda\commands\NagrodaCommand.class
+pl\naris\nagroda\NagrodaPlugin.class

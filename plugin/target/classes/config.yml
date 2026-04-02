@@ -1,0 +1,35 @@
+# ================================
+# NMC-Nagroda v2.0
+# Łączy się bezpośrednio z MySQL
+# ================================
+
+# UNIKALNE ID serwera — zmień na każdym serwerze MC!
+# Np. "survival", "skyblock", "lobby"
+server-id: "survival"
+
+# MySQL — ta sama baza co bot Discord
+mysql:
+  host: "node-pl-02k.icehost.pl"
+  port: 5891
+  database: "s167081_webpanel"
+  username: "u167081_1x6PktTTsG"
+  password: "chxl+gk!T+RyoM9WMdeXwx7T"
+
+# Co ile sekund sprawdzać bazę danych
+check-interval: 10
+
+# Komendy do wykonania jako nagroda
+# %player% — nick gracza
+rewards:
+  - "give %player% diamond 5"
+  - "give %player% emerald 10"
+
+# Wiadomości
+messages:
+  reward-given: "&a&l✦ &aDziękujemy za weryfikację Discord! &7Odebrałeś nagrodę."
+  setup-saved: "&a&l✦ &aKomendy nagród zostały zapisane!"
+  reload: "&a&l✦ &aKonfiguracja przeładowana!"
+
+reward-description:
+  - "◆ 5x Diament"
+  - "◆ 10x Szmaragd"

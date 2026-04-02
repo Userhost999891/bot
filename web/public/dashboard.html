@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NarisMC • Core Panel</title>
+  <meta name="description" content="Panel zarządzania botem Discord — NarisMC Core">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+  <div class="bg-animation">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+          <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442z"/>
+        </svg>
+      </div>
+      <span class="sidebar-title">NarisMC Core</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-section="servers" id="nav-servers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        <span>Serwery</span>
+      </button>
+
+      <div class="sidebar-section-label">Zarządzanie</div>
+
+      <button class="sidebar-item disabled" data-section="dashboard" id="nav-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="sidebar-item disabled" data-section="verification" id="nav-verification">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Weryfikacja</span>
+      </button>
+      <button class="sidebar-item disabled" data-section="tickets" id="nav-tickets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Tickety</span>
+      </button>
+      <button class="sidebar-item disabled" data-section="announcements" id="nav-announcements">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Ogłoszenia</span>
+      </button>
+      <button class="sidebar-item disabled" data-section="rewards" id="nav-rewards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        <span>Nagrody MC</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Rozrywka</div>
+
+      <button class="sidebar-item disabled" data-section="tictactoe" id="nav-tictactoe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M8 8l8 8"/><path d="M16 8l-8 8"/></svg>
+        <span>Kółko i Krzyżyk</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-user" id="sidebar-user">
+      <img id="user-avatar" class="sidebar-user-avatar" src="" alt="">
+      <div class="sidebar-user-info">
+        <span id="user-name" class="sidebar-user-name"></span>
+        <a href="/auth/logout" class="sidebar-logout" id="logout-button">Wyloguj</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+
+    <!-- SERVER SELECTION -->
+    <section class="section" id="section-servers">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="section-icon">🏠</span>
+          Wybierz serwer
+        </h1>
+        <p class="section-desc">Wybierz serwer Discord, którym chcesz zarządzać.</p>
+      </div>
+      <div class="server-grid" id="server-grid">
+        <div class="loading-spinner" id="servers-loading">
+          <div class="spinner"></div>
+          <p>Ładowanie serwerów...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD HOME -->
+    <section class="section hidden" id="section-dashboard">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">📊</span>
+            Dashboard
+          </h1>
+          <span class="server-badge" id="dash-server-name"></span>
+        </div>
+        <p class="section-desc">Przegląd serwera i najważniejsze statystyki.</p>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="stat-members">—</div><div class="stat-label">Członków</div></div>
+        <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="stat-online">—</div><div class="stat-label">Online</div></div>
+        <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="stat-channels">—</div><div class="stat-label">Kanałów</div></div>
+        <div class="stat-card"><div class="stat-icon">🎭</div><div class="stat-value" id="stat-roles">—</div><div class="stat-label">Ról</div></div>
+        <div class="stat-card"><div class="stat-icon">🤖</div><div class="stat-value" id="stat-bots">—</div><div class="stat-label">Botów</div></div>
+        <div class="stat-card"><div class="stat-icon">💎</div><div class="stat-value" id="stat-boosts">—</div><div class="stat-label">Boostów</div></div>
+      </div>
+    </section>
+
+    <!-- VERIFICATION -->
+    <section class="section hidden" id="section-verification">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">🔒</span>
+            Weryfikacja
+          </h1>
+          <span class="server-badge" id="ver-server-name"></span>
+        </div>
+        <p class="section-desc">Konfiguruj system weryfikacji nowych użytkowników.</p>
+      </div>
+
+      <div class="status-bar hidden" id="ver-status-bar">
+        <span id="ver-status-message"></span>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-card">
+          <h3 class="config-card-title">📢 Kanał Weryfikacji</h3>
+          <p class="config-card-desc">Kanał, na którym pojawi się wiadomość weryfikacyjna.</p>
+          <select class="config-select" id="verification-channel">
+            <option value="">-- Wybierz kanał --</option>
+          </select>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">✅ Rola Zweryfikowanego</h3>
+          <p class="config-card-desc">Nazwa roli nadawanej po weryfikacji.</p>
+          <input type="text" class="config-input" id="verified-role-name" value="Zweryfikowany" placeholder="Zweryfikowany">
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">❌ Rola Niezweryfikowanego</h3>
+          <p class="config-card-desc">Nazwa roli dla niezweryfikowanych użytkowników.</p>
+          <input type="text" class="config-input" id="unverified-role-name" value="Niezweryfikowany" placeholder="Niezweryfikowany">
+        </div>
+        <div class="config-card config-card-wide">
+          <h3 class="config-card-title">👁️ Kanały widoczne bez weryfikacji</h3>
+          <p class="config-card-desc">Kanały widoczne dla niezweryfikowanych (np. zasady, weryfikacja).</p>
+          <div class="channels-checkboxes" id="visible-channels">
+            <div class="loading-spinner small"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="action-btn action-btn-save" id="save-config-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Zapisz
+        </button>
+        <button class="action-btn action-btn-roles" id="create-roles-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          Utwórz role
+        </button>
+        <button class="action-btn action-btn-perms" id="setup-permissions-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Ustaw uprawnienia
+        </button>
+        <button class="action-btn action-btn-send" id="send-verification-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Wyślij wiadomość
+        </button>
+      </div>
+    </section>
+
+    <!-- TICKETS -->
+    <section class="section hidden" id="section-tickets">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">🎫</span>
+            Tickety
+          </h1>
+          <span class="server-badge" id="tick-server-name"></span>
+        </div>
+        <p class="section-desc">Konfiguruj system ticketów — kafelkowe zgłoszenia.</p>
+      </div>
+
+      <div class="status-bar hidden" id="tick-status-bar">
+        <span id="tick-status-message"></span>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-card">
+          <h3 class="config-card-title">📢 Kanał Ticketów</h3>
+          <p class="config-card-desc">Kanał, na którym pojawi się panel z wyborem kategorii.</p>
+          <select class="config-select" id="ticket-channel">
+            <option value="">-- Wybierz kanał --</option>
+          </select>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">🛡️ Rola Supportu</h3>
+          <p class="config-card-desc">Rola, która może widzieć i odbierać tickety.</p>
+          <select class="config-select" id="ticket-support-role">
+            <option value="">-- Wybierz rolę --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CATEGORIES -->
+      <div class="categories-section">
+        <div class="categories-header">
+          <h2 class="categories-title">📋 Kategorie Ticketów</h2>
+          <button class="action-btn action-btn-add" id="add-category-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Dodaj kategorię
+          </button>
+        </div>
+        <div class="categories-list" id="categories-list">
+          <p class="text-muted">Ładowanie kategorii...</p>
+        </div>
+      </div>
+
+      <!-- ADD/EDIT CATEGORY MODAL -->
+      <div class="modal-overlay hidden" id="category-modal">
+        <div class="modal-card">
+          <h3 class="modal-title" id="modal-title">Dodaj kategorię</h3>
+          <div class="modal-body">
+            <label class="modal-label">Nazwa</label>
+            <input type="text" class="config-input" id="cat-name" placeholder="np. Pomoc">
+            <label class="modal-label">Emoji</label>
+            <input type="text" class="config-input" id="cat-emoji" placeholder="np. 🛟" maxlength="4">
+            <label class="modal-label">Opis</label>
+            <input type="text" class="config-input" id="cat-description" placeholder="Gdy potrzebujesz pomocy...">
+            <label class="modal-label">Kategoria Discord (folder kanałów)</label>
+            <select class="config-select" id="cat-discord-category">
+              <option value="">-- Bez kategorii --</option>
+            </select>
+            <label class="modal-label">Kolor paska</label>
+            <div class="color-picker-row">
+              <input type="color" class="color-picker" id="cat-color" value="#5865F2">
+              <span class="color-hex" id="cat-color-hex">#5865F2</span>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="action-btn action-btn-save" id="modal-save-btn">Zapisz</button>
+            <button class="action-btn action-btn-cancel" id="modal-cancel-btn">Anuluj</button>
+          </div>
+          <input type="hidden" id="cat-edit-id" value="">
+        </div>
+      </div>
+
+      <div class="action-buttons" style="margin-top: 24px;">
+        <button class="action-btn action-btn-save" id="save-ticket-config-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Zapisz konfigurację
+        </button>
+        <button class="action-btn action-btn-send" id="send-ticket-panel-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Wyślij panel ticketów
+        </button>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section class="section hidden" id="section-announcements">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">📢</span>
+            Ogłoszenia
+          </h1>
+          <span class="server-badge" id="ann-server-name"></span>
+        </div>
+        <p class="section-desc">Wyślij estetyczne ogłoszenia na wybrany kanał.</p>
+      </div>
+
+      <div class="status-bar hidden" id="ann-status-bar">
+        <span id="ann-status-message"></span>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-card">
+          <h3 class="config-card-title">📢 Kanał ogłoszeń</h3>
+          <p class="config-card-desc">Na jaki kanał wysłać ogłoszenie.</p>
+          <select class="config-select" id="ann-channel">
+            <option value="">-- Wybierz kanał --</option>
+          </select>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">🎨 Kolor paska</h3>
+          <p class="config-card-desc">Kolor bocznego paska embeda.</p>
+          <div class="color-picker-row">
+            <input type="color" class="color-picker" id="ann-color" value="#5865F2">
+            <span class="color-hex" id="ann-color-hex">#5865F2</span>
+          </div>
+        </div>
+        <div class="config-card config-card-wide">
+          <h3 class="config-card-title">✏️ Tytuł ogłoszenia</h3>
+          <p class="config-card-desc">Opcjonalny tytuł wyświetlany na górze embeda.</p>
+          <input type="text" class="config-input" id="ann-title" placeholder="np. Aktualizacja serwera">
+        </div>
+        <div class="config-card config-card-wide">
+          <h3 class="config-card-title">📝 Treść ogłoszenia</h3>
+          <p class="config-card-desc">Główna treść wiadomości. Wspiera markdown Discord.</p>
+          <textarea class="config-textarea" id="ann-content" rows="6" placeholder="Wpisz treść ogłoszenia...&#10;&#10;Wspiera **pogrubienie**, *kursywę*, `kod` itd."></textarea>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">📎 Stopka</h3>
+          <p class="config-card-desc">Tekst na dole embeda.</p>
+          <input type="text" class="config-input" id="ann-footer" placeholder="NarisMC" value="NarisMC">
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">🔤 Small Caps</h3>
+          <p class="config-card-desc">Konwertuj tytuł na ꜱᴍᴀʟʟ ᴄᴀᴘꜱ?</p>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ann-smallcaps" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Włączone</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- DISCORD-ACCURATE PREVIEW -->
+      <div class="preview-section">
+        <h3 class="preview-title">👁️ Podgląd — dokładnie jak na Discordzie</h3>
+        <div class="discord-preview-wrapper" id="discord-preview">
+          <div class="discord-message-header">
+            <img class="discord-bot-avatar" id="preview-bot-avatar" src="" alt="Bot">
+            <div>
+              <span class="discord-bot-name">
+                <span id="preview-bot-name">NarisMC Bot</span>
+                <span class="discord-bot-tag">BOT</span>
+                <span class="discord-timestamp" id="preview-timestamp">Dzisiaj o 12:00</span>
+              </span>
+            </div>
+          </div>
+          <div class="discord-embed">
+            <div class="discord-embed-bar" id="preview-bar"></div>
+            <div class="discord-embed-body">
+              <div class="discord-embed-title" id="preview-title"></div>
+              <div class="discord-embed-content" id="preview-content">Wpisz treść ogłoszenia...</div>
+              <div class="discord-embed-footer" id="preview-footer">NarisMC • Dzisiaj</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="action-btn action-btn-send" id="send-announcement-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Wyślij ogłoszenie
+        </button>
+      </div>
+    </section>
+
+    <!-- REWARDS -->
+    <section class="section hidden" id="section-rewards">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">🎁</span>
+            Nagrody MC
+          </h1>
+          <span class="server-badge" id="rew-server-name"></span>
+        </div>
+        <p class="section-desc">Dodaj serwery MC i przypisz kanały Discord. Gracz pisze nick na kanale → dostaje nagrodę na serwerze.</p>
+      </div>
+
+      <div class="status-bar hidden" id="rew-status-bar">
+        <span id="rew-status-message"></span>
+      </div>
+
+      <!-- SERVER LIST -->
+      <div class="categories-section">
+        <div class="categories-header">
+          <h2 class="categories-title">🖥️ Serwery MC</h2>
+          <button class="action-btn action-btn-add" id="add-reward-server-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Dodaj serwer
+          </button>
+        </div>
+        <div class="categories-list" id="reward-servers-list">
+          <p class="text-muted">Ładowanie serwerów...</p>
+        </div>
+      </div>
+
+      <!-- ADD/EDIT SERVER MODAL -->
+      <div class="modal-overlay hidden" id="reward-server-modal">
+        <div class="modal-card">
+          <h3 class="modal-title" id="rew-modal-title">Dodaj serwer</h3>
+          <div class="modal-body">
+            <label class="modal-label">ID serwera (małe litery, bez spacji)</label>
+            <input type="text" class="config-input" id="rew-server-id" placeholder="np. survival, skyblock">
+            <label class="modal-label">Nazwa serwera</label>
+            <input type="text" class="config-input" id="rew-server-label" placeholder="np. Survival, SkyBlock">
+            <label class="modal-label">Kanał Discord</label>
+            <select class="config-select" id="rew-server-channel">
+              <option value="">-- Wybierz kanał --</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button class="action-btn action-btn-save" id="rew-modal-save-btn">Zapisz</button>
+            <button class="action-btn action-btn-cancel" id="rew-modal-cancel-btn">Anuluj</button>
+          </div>
+          <input type="hidden" id="rew-edit-id" value="">
+        </div>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div class="info-card">
+        <h3>📖 Jak to działa?</h3>
+        <p>1️⃣ Dodaj serwer MC (np. <strong>survival</strong>) i przypisz kanał Discord (np. <strong>#nagroda-survival</strong>)</p>
+        <p>2️⃣ W pluginie MC ustaw <code>server-id: "survival"</code> — musi pasować do ID powyżej!</p>
+        <p>3️⃣ Gracz pisze nick na <strong>#nagroda-survival</strong> → bot zapisuje do MySQL z trybem "survival"</p>
+        <p>4️⃣ Plugin MC z <code>server-id: "survival"</code> czyta i daje nagrodę</p>
+        <p style="margin-top: 8px; color: var(--teal);">🌐 Każdy serwer MC ma swój kanał i daje nagrodę osobno!</p>
+      </div>
+    </section>
+
+    <!-- TIC-TAC-TOE -->
+    <section class="section hidden" id="section-tictactoe">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon">🎮</span>
+            Kółko i Krzyżyk
+          </h1>
+          <span class="server-badge" id="ttt-server-name"></span>
+        </div>
+        <p class="section-desc">Ranking graczy na Twoim serwerze. Gra odbywa się przez komendy na Discordzie!</p>
+      </div>
+
+      <div class="config-grid" style="margin-bottom: 16px;">
+        <div class="config-card">
+          <h3 class="config-card-title">🎮 Jak grać?</h3>
+          <p class="config-card-desc" style="margin-bottom: 0; line-height: 2;">
+            <code>/tictactoe bot</code> — Graj z botem AI<br>
+            <code>/tictactoe gracz</code> — Wyzwij innego gracza<br>
+            <code>/tictactoe ranking</code> — Zobacz ranking<br>
+            <code>/tictactoe statystyki</code> — Twoje statystyki
+          </p>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">🤖 O bocie AI</h3>
+          <p class="config-card-desc" style="margin-bottom: 0; line-height: 1.8;">
+            Bot gra trochę chaotycznie — celowo popełnia błędy! Ale im więcej wygrywasz, tym trudniejszy się staje. Na początku pomyli się w 50% ruchów, ale z czasem będzie się mylił coraz rzadziej. Powodzenia! 💪
+          </p>
+        </div>
+      </div>
+
+      <div class="categories-section">
+        <h2 class="categories-title">🏆 Top 10 Graczy</h2>
+        <div class="leaderboard-container" id="ttt-leaderboard">
+          <p class="text-muted">Ładowanie rankingu...</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
