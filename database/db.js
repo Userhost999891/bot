@@ -126,6 +126,13 @@ async function getPool() {
         PRIMARY KEY (guild_id, user_id)
       )
     `);
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS tictactoe_config (
+        guild_id VARCHAR(20) PRIMARY KEY,
+        channel_id VARCHAR(20),
+        message_id VARCHAR(20)
+      )
+    `);
 
     // Ensure utf8mb4 conversion for dynamic discord inputs containing emojis
     const tables = ['guild_config', 'ticket_config', 'announcements_config', 'reward_servers', 'ticket_categories'];
@@ -446,6 +453,38 @@ async function getTTTLeaderboard(guildId, limit = 10) {
   return rows;
 }
 
+async function getTTTConfig(guildId) {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT * FROM tictactoe_config WHERE guild_id = ?', [guildId]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+async function setTTTConfig(guildId, config) {
+  const p = await getPool();
+  const existing = await getTTTConfig(guildId);
+  if (existing) {
+    await p.execute(`
+      UPDATE tictactoe_config SET
+        channel_id = COALESCE(?, channel_id),
+        message_id = COALESCE(?, message_id)
+      WHERE guild_id = ?
+    `, [
+      config.channel_id || null,
+      config.message_id || null,
+      guildId
+    ]);
+  } else {
+    await p.execute(`
+      INSERT INTO tictactoe_config (guild_id, channel_id, message_id)
+      VALUES (?, ?, ?)
+    `, [
+      guildId,
+      config.channel_id || null,
+      config.message_id || null
+    ]);
+  }
+}
+
 // === REWARD SERVERS (multi-server config) ===
 async function getRewardServers(guildId) {
   const p = await getPool();
@@ -527,6 +566,7 @@ module.exports = {
   getAnnouncementsConfig, setAnnouncementsConfig,
   // Tic-Tac-Toe
   getTTTStats, updateTTTStats, getTTTLeaderboard,
+  getTTTConfig, setTTTConfig,
   // Rewards
   getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
   getAllRewardChannels, getServerByChannel,

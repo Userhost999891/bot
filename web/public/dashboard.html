@@ -435,12 +435,23 @@
           </h1>
           <span class="server-badge" id="ttt-server-name"></span>
         </div>
-        <p class="section-desc">Ranking graczy na Twoim serwerze. Gra odbywa się przez komendy na Discordzie!</p>
+        <p class="section-desc">Konfiguruj Matchmaking Kółko i Krzyżyk na swoim serwerze!</p>
       </div>
 
-      <div class="config-grid" style="margin-bottom: 16px;">
+      <div class="status-bar hidden" id="ttt-status-bar">
+        <span id="ttt-status-message"></span>
+      </div>
+
+      <div class="config-grid">
         <div class="config-card">
-          <h3 class="config-card-title">🎮 Jak grać?</h3>
+          <h3 class="config-card-title">📢 Kanał Kółko i Krzyżyk</h3>
+          <p class="config-card-desc">Kanał, na którym pojawi się panel do matchmakingu z przyciskami.</p>
+          <select class="config-select" id="ttt-channel">
+            <option value="">-- Wybierz kanał --</option>
+          </select>
+        </div>
+        <div class="config-card">
+          <h3 class="config-card-title">🎮 Jak grać spoza panelu?</h3>
           <p class="config-card-desc" style="margin-bottom: 0; line-height: 2;">
             <code>/tictactoe bot</code> — Graj z botem AI<br>
             <code>/tictactoe gracz</code> — Wyzwij innego gracza<br>
@@ -454,6 +465,17 @@
             Bot gra trochę chaotycznie — celowo popełnia błędy! Ale im więcej wygrywasz, tym trudniejszy się staje. Na początku pomyli się w 50% ruchów, ale z czasem będzie się mylił coraz rzadziej. Powodzenia! 💪
           </p>
         </div>
+      </div>
+
+      <div class="action-buttons" style="margin-bottom: 32px;">
+        <button class="action-btn action-btn-save" id="save-ttt-config-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Zapisz panel
+        </button>
+        <button class="action-btn action-btn-send" id="send-ttt-panel-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Opublikuj Matchmaking
+        </button>
       </div>
 
       <div class="categories-section">

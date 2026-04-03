@@ -5,6 +5,9 @@ const { getTTTStats, updateTTTStats, getTTTLeaderboard } = require('../../databa
 // Active games stored in memory
 const activeGames = new Map();
 
+// Matchmaking queues per guild: guildId -> [userId1, userId2...]
+const matchmakingQueue = new Map();
+
 const EMPTY = '⬛';
 const X_MARK = '❌';
 const O_MARK = '⭕';
@@ -266,6 +269,7 @@ async function finishGame(interaction, gameId, game, result) {
 
 module.exports = {
   activeGames,
+  matchmakingQueue,
   createGame,
   buildBoardComponents,
   buildGameEmbed,

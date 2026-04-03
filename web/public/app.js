@@ -43,33 +43,47 @@
 // =============================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-function playTone(freq, type, duration, vol=0.1) {
+function playTone(frequencies, type, duration, vol=0.1) {
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   
-  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  const freqs = Array.isArray(frequencies) ? frequencies : [frequencies];
   
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
+  freqs.forEach(freq => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    // Add filtering for softer edge
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 2000;
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    // Smooth envelope attack & release
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  });
 }
 
 const UI = {
-  hover: () => playTone(600, 'sine', 0.05, 0.02),
-  click: () => playTone(300, 'triangle', 0.08, 0.04),
+  hover: () => playTone(800, 'sine', 0.05, 0.03),
+  click: () => playTone([300, 450], 'triangle', 0.1, 0.06),
   success: () => {
-    playTone(400, 'sine', 0.1, 0.04);
-    setTimeout(() => playTone(600, 'sine', 0.2, 0.04), 100);
+    playTone([400, 600], 'sine', 0.15, 0.05);
+    setTimeout(() => playTone([600, 800], 'sine', 0.3, 0.05), 100);
   },
   error: () => {
-    playTone(150, 'sawtooth', 0.15, 0.04);
-    setTimeout(() => playTone(100, 'sawtooth', 0.2, 0.04), 150);
+    playTone([150, 200], 'sawtooth', 0.2, 0.06);
+    setTimeout(() => playTone([100, 150], 'sawtooth', 0.3, 0.07), 150);
   }
 };
 
@@ -372,7 +386,22 @@ function setupNavigation() {
 
   async function loadRolesForTickets() {
     try {
-      const res = await fetch(`/api/guild/${selectedGuildId}/roles`);
+      const rolesUrl = `/api/guild/${selectedGuildId}/roles`;
+      const res = await fetch(rolesUrl);
+      const channelsRes = await fetch(`/api/guild/${selectedGuildId}/channels`);
+      const channels = await channelsRes.json();
+
+      const tttChan = $('ttt-channel');
+      if (tttChan) {
+        tttChan.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+        channels.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.id;
+          opt.textContent = `#${ch.name}`;
+          tttChan.appendChild(opt);
+        });
+      }
+
       const roles = await res.json();
       if (!Array.isArray(roles)) throw new Error(roles.error || 'Server returned invalid roles data');
       const select = $('ticket-support-role');
@@ -805,35 +834,79 @@ function setupNavigation() {
 
     try {
       const res = await fetch(`/api/guild/${selectedGuildId}/ttt-leaderboard`);
-      const leaderboard = await res.json();
+      const users = await res.json();
 
-      if (leaderboard.length === 0) {
+      if (!Array.isArray(users) || users.length === 0) {
         container.innerHTML = '<p class="text-muted">Brak danych. Zagraj pierwszą grę komendą <code>/tictactoe bot</code> na Discordzie!</p>';
-        return;
-      }
-
-      container.innerHTML = '';
-      leaderboard.forEach((entry, i) => {
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        const total = entry.wins + entry.losses + entry.draws;
-        const winRate = total > 0 ? Math.round((entry.wins / total) * 100) : 0;
-
-        const item = document.createElement('div');
-        item.className = 'leaderboard-item';
-        item.style.animation = `sectionIn 0.3s ease ${i * 0.05}s both`;
-        item.innerHTML = `
-          <div class="leaderboard-rank">${medal}</div>
-          <div class="leaderboard-name">${escapeHtml(entry.username)}</div>
-          <div class="leaderboard-stats">
-            <span>${entry.wins}</span>W / ${entry.losses}L / ${entry.draws}D
-            <br><small>${winRate}% win rate</small>
+      } else {
+        const html = users.map((u, i) => `
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank">#${i + 1}</div>
+            <div class="leaderboard-name">${escapeHtml(u.username || 'Nieznany Graczu')}</div>
+            <div class="leaderboard-stats"><span>${u.wins}</span> W / ${u.losses} L</div>
           </div>
-        `;
-        container.appendChild(item);
-      });
+        `).join('');
+        $('ttt-leaderboard').innerHTML = html;
+      }
     } catch (e) {
-      container.innerHTML = '<p class="text-muted">Błąd ładowania rankingu.</p>';
+      console.error(e);
+      $('ttt-leaderboard').innerHTML = '<p class="text-muted" style="color: var(--danger)">Błąd serwera. ' + e.message + '</p>';
     }
+
+    try {
+      const configRes = await fetch(`/api/guild/${selectedGuildId}/ttt`);
+      if (configRes.ok) {
+        const tttConfigCache = await configRes.json();
+        if (tttConfigCache.channel_id) {
+          $('ttt-channel').value = tttConfigCache.channel_id;
+        }
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  // =============================
+  // EVENT LISTENERS
+  // =============================
+  function setupEventListeners() {
+    // TTT: Save
+    if ($('save-ttt-config-btn')) {
+      $('save-ttt-config-btn').addEventListener('click', async () => {
+        try {
+          const body = {
+            channel_id: $('ttt-channel').value || null
+          };
+          const res = await fetch(`/api/guild/${selectedGuildId}/ttt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (res.ok) {
+            showSectionStatus('ttt', 'Zapisano pomyślnie!', 'success');
+          } else {
+            const err = await res.json();
+            showSectionStatus('ttt', 'Błąd: ' + (err.error || 'Nieznany'), 'error');
+          }
+        } catch (e) { showSectionStatus('ttt', 'Błąd zapisu: ' + e.message, 'error'); }
+      });
+    }
+
+    // TTT: Send Matchmaking Panel
+    if ($('send-ttt-panel-btn')) {
+      $('send-ttt-panel-btn').addEventListener('click', async () => {
+        try {
+          const res = await fetch(`/api/guild/${selectedGuildId}/send-ttt-panel`, {
+            method: 'POST'
+          });
+          if (res.ok) {
+            showSectionStatus('ttt', 'Panel Matchmakingu został wysłany!', 'success');
+          } else {
+            const err = await res.json();
+            showSectionStatus('ttt', err.error || 'Wystąpił błąd', 'error');
+          }
+        } catch (e) { showSectionStatus('ttt', 'Błąd: ' + e.message, 'error'); }
+      });
+    }
+
   }
 
   // =============================

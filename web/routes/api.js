@@ -1,6 +1,12 @@
 // API routes for verification + guild management (ported + extended)
 const express = require('express');
-const { getConfig, setConfig } = require('../../database/db');
+const { 
+  getConfig, setConfig, 
+  getTicketConfig, setTicketConfig, getTicketCategories,
+  getAnnouncementsConfig, setAnnouncementsConfig,
+  getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
+  getTTTConfig, setTTTConfig
+} = require('../../database/db');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
 
 
@@ -346,6 +352,79 @@ module.exports = function(discordClient) {
     }
 
     res.json(enriched);
+  });
+
+  // =============================
+  // TIC-TAC-TOE CONFIGURATION
+  // =============================
+  router.get('/guild/:id/ttt', authMiddleware, async (req, res) => {
+    try {
+      const config = await getTTTConfig(req.params.id) || {};
+      res.json(config);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
+
+  router.post('/guild/:id/ttt', authMiddleware, adminParamMiddleware, async (req, res) => {
+    try {
+      await setTTTConfig(req.params.id, req.body);
+      res.json({ success: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
+
+  router.post('/guild/:id/send-ttt-panel', authMiddleware, adminParamMiddleware, async (req, res) => {
+    try {
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Bot is not on this server' });
+
+      const config = await getTTTConfig(req.params.id);
+      if (!config || !config.channel_id) return res.status(400).json({ error: 'Configuration incomplete' });
+
+      const channel = guild.channels.cache.get(config.channel_id);
+      if (!channel) return res.status(400).json({ error: 'Tic-Tac-Toe channel not found on server' });
+
+      const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+      const embed = new EmbedBuilder()
+        .setTitle('🎮 Strefa Kółko i Krzyżyk')
+        .setDescription('Wybierz z kim chcesz zmierzyć się w klasycznej grze w Kółko i Krzyżyk. Bot rozstawi nową planszę natychmiastowo!')
+        .setColor(0x5865F2)
+        .addFields({ name: '📜 Opcje Gry', value: '🤖 **Z Botem**: Walka z zaprogramowanym algorytmem bota NarisMC.\n👥 **Losowy Gracz**: Dołącz do kolejki i poczekaj na wolnego przeciwnika!' })
+        .setFooter({ text: 'NarisMC • Matchmaking', iconURL: guild.iconURL() });
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('ttt_queue_bot')
+          .setLabel('Walcz z Botem')
+          .setEmoji('🤖')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('ttt_queue_player')
+          .setLabel('Graj z Graczem')
+          .setEmoji('👥')
+          .setStyle(ButtonStyle.Success)
+      );
+
+      // Try deleting old message if it exists
+      if (config.message_id) {
+        try {
+          const oldMsg = await channel.messages.fetch(config.message_id);
+          if (oldMsg) await oldMsg.delete();
+        } catch(e) {}
+      }
+
+      const sentMsg = await channel.send({ embeds: [embed], components: [row] });
+      await setTTTConfig(req.params.id, { message_id: sentMsg.id });
+
+      res.json({ success: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: e.message || 'Error sending panel' });
+    }
   });
 
   return router;

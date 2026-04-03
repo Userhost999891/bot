@@ -3,7 +3,7 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedB
 const { getRandomQuestion } = require('../modules/verification/questions');
 const { handleVerification, assignVerifiedRole } = require('../modules/verification/handler');
 const { handleTicketCreate, handleTicketClose, handleTicketClaim } = require('../modules/tickets/handler');
-const { activeGames, handleMove, createGame, buildBoardComponents, buildGameEmbed } = require('../modules/tictactoe/handler');
+const { activeGames, matchmakingQueue, handleMove, createGame, buildBoardComponents, buildGameEmbed } = require('../modules/tictactoe/handler');
 
 const pendingQuestions = new Map();
 
@@ -108,6 +108,54 @@ module.exports = {
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌〢Błąd gry!', ephemeral: true });
         }
+      }
+    }
+
+    if (interaction.isButton() && interaction.customId === 'ttt_queue_bot') {
+      const gameId = `ttt_${interaction.user.id}_bot_${Date.now()}`;
+      const game = createGame(interaction.user.id, 'bot', true);
+      activeGames.set(gameId, game);
+
+      const embed = buildGameEmbed(game, null);
+      const components = buildBoardComponents(game, gameId);
+
+      await interaction.reply({ content: `✅〢Stworzono grę na kanale! Powodzenia.`, ephemeral: true });
+      await interaction.channel.send({ content: `<@${interaction.user.id}> Twoja gra z Botem gotowa!`, embeds: [embed], components });
+    }
+
+    if (interaction.isButton() && interaction.customId === 'ttt_queue_player') {
+      const gId = interaction.guild.id;
+      let queue = matchmakingQueue.get(gId) || [];
+
+      // Check if user is already in queue
+      if (queue.includes(interaction.user.id)) {
+        queue = queue.filter(id => id !== interaction.user.id);
+        matchmakingQueue.set(gId, queue);
+        return interaction.reply({ content: '❌〢Opuściłeś kolejkę matchmakingu.', ephemeral: true });
+      }
+
+      if (queue.length > 0) {
+        // Match found!
+        const opponentId = queue.shift();
+        matchmakingQueue.set(gId, queue);
+
+        const gameId = `ttt_${opponentId}_${interaction.user.id}_${Date.now()}`;
+        // Randomize who goes first
+        const p1 = Math.random() > 0.5 ? opponentId : interaction.user.id;
+        const p2 = p1 === opponentId ? interaction.user.id : opponentId;
+        const game = createGame(p1, p2, false);
+        activeGames.set(gameId, game);
+
+        const embed = buildGameEmbed(game, null);
+        const components = buildBoardComponents(game, gameId);
+
+        await interaction.reply({ content: `⚔️〢Znaleziono przeciwnika! Grajcie!`, ephemeral: true });
+        await interaction.channel.send({ content: `<@${p1}> vs <@${p2}> Gra rozpoczęta!`, embeds: [embed], components });
+      } else {
+        // Add to queue
+        queue.push(interaction.user.id);
+        matchmakingQueue.set(gId, queue);
+        await interaction.reply({ content: '⏳〢Dołączyłeś do kolejki! Oczekuję na drugiego gracza... (Kliknij ponownie by opuścić)', ephemeral: true });
       }
     }
 
