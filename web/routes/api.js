@@ -81,15 +81,21 @@ module.exports = function(discordClient) {
 
   // Get channels for a guild
   router.get('/guild/:id/channels', authMiddleware, async (req, res) => {
-    const guild = discordClient.guilds.cache.get(req.params.id);
-    if (!guild) return res.status(404).json({ error: 'Guild not found' });
+    try {
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const channels = guild.channels.cache
-      .filter(c => c.type === 0) // TEXT channels
-      .map(c => ({ id: c.id, name: c.name, category: c.parent?.name || 'Brak kategorii' }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      await guild.channels.fetch();
+      const channels = guild.channels.cache
+        .filter(c => c.type === 0) // TEXT channels
+        .map(c => ({ id: c.id, name: c.name, category: c.parent?.name || 'Brak kategorii' }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-    res.json(channels);
+      res.json(channels);
+    } catch(e) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Get categories (Discord channel categories) for a guild
@@ -98,6 +104,7 @@ module.exports = function(discordClient) {
       const guild = discordClient.guilds.cache.get(req.params.id);
       if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
+      await guild.channels.fetch();
       const categories = guild.channels.cache
         .filter(c => c.type === 4) // GUILD_CATEGORY
         .map(c => ({ id: c.id, name: c.name }))
@@ -116,6 +123,7 @@ module.exports = function(discordClient) {
       const guild = discordClient.guilds.cache.get(req.params.id);
       if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
+      await guild.roles.fetch();
       const roles = guild.roles.cache
         .filter(r => r.name !== '@everyone')
         .map(r => ({ id: r.id, name: r.name, color: r.hexColor, position: r.position }))
