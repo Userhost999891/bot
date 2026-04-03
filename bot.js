@@ -80,6 +80,16 @@ client.login(process.env.DISCORD_TOKEN)
     if (process.env.MYSQL_HOST) {
       await loadRewardChannels();
     }
+
+    // Keep-alive self ping mechanism for free hostings
+    if (process.env.APP_URL) {
+      setInterval(() => {
+        const fetch = require('node-fetch');
+        fetch(`${process.env.APP_URL}/health`)
+          .then(res => console.log(`[KeepAlive] Pinged ${process.env.APP_URL}/health | Status: ${res.status}`))
+          .catch(err => console.log(`[KeepAlive] Ping failed: ${err.message}`));
+      }, 5 * 60 * 1000); // Co 5 minut
+    }
   })
   .catch(err => {
     console.error('❌ Nie można zalogować bota:', err.message);
