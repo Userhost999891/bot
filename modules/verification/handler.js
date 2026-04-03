@@ -35,21 +35,25 @@ async function assignVerifiedRole(interaction, guild) {
   const config = getConfig(guild.id);
   if (!config) return false;
 
-  const member = interaction.member || await guild.members.fetch(interaction.user.id);
+  // Always fully fetch to prevent any cache issues or missing member data
+  const member = await guild.members.fetch(interaction.user.id).catch(() => null);
+  if (!member) return false;
 
   const verifiedRole = guild.roles.cache.find(r => r.name === config.verified_role_name);
   const unverifiedRole = guild.roles.cache.find(r => r.name === config.unverified_role_name);
 
   if (!verifiedRole) {
-    await interaction.reply({ content: '❌〢Rola zweryfikowanego nie istnieje!', ephemeral: true });
+    await interaction.reply({ content: '❌〢Rola zweryfikowanego nie istnieje! Skontaktuj się z administracją serwera, bo bot nie ma poprawnie ustawionych ról.', ephemeral: true });
     return false;
   }
 
   try {
+    // Add verified role unconditionally
     await member.roles.add(verifiedRole, 'Weryfikacja przeszła pomyślnie');
 
-    if (unverifiedRole && member.roles.cache.has(unverifiedRole.id)) {
-      await member.roles.remove(unverifiedRole, 'Użytkownik się zweryfikował');
+    // Remove unverified unconditionally without checking cache, catch just in case it doesn't exist on user
+    if (unverifiedRole) {
+      await member.roles.remove(unverifiedRole, 'Użytkownik się zweryfikował').catch(() => {});
     }
 
     const savedRoleIds = getSavedRoles(guild.id, member.user.id);
