@@ -390,22 +390,22 @@ module.exports = function(discordClient) {
 
       const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
       const embed = new EmbedBuilder()
-        .setTitle('🎮 Strefa Kółko i Krzyżyk')
+        .setTitle('⛋ Strefa Kółko i Krzyżyk')
         .setDescription('Wybierz z kim chcesz zmierzyć się w klasycznej grze w Kółko i Krzyżyk. Bot rozstawi nową planszę natychmiastowo!')
         .setColor(0x5865F2)
-        .addFields({ name: '📜 Opcje Gry', value: '🤖 **Z Botem**: Walka z zaprogramowanym algorytmem bota NarisMC.\n👥 **Losowy Gracz**: Dołącz do kolejki i poczekaj na wolnego przeciwnika!' })
+        .addFields({ name: '▤ Opcje Gry', value: '⚙️ **Z Botem**: Walka z zaprogramowanym algorytmem bota NarisMC.\n☍ **Losowy Gracz**: Dołącz do kolejki i poczekaj na wolnego przeciwnika!' })
         .setFooter({ text: 'NarisMC • Matchmaking', iconURL: guild.iconURL() });
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('ttt_queue_bot')
           .setLabel('Walcz z Botem')
-          .setEmoji('🤖')
+          .setEmoji('⚙️')
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setCustomId('ttt_queue_player')
           .setLabel('Graj z Graczem')
-          .setEmoji('👥')
+          .setEmoji('☍')
           .setStyle(ButtonStyle.Success)
       );
 

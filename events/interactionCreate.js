@@ -106,7 +106,7 @@ module.exports = {
       } catch (e) {
         console.error('TTT move error:', e);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌〢Błąd gry!', ephemeral: true });
+          await interaction.reply({ content: '⚠〢Błąd gry!', ephemeral: true });
         }
       }
     }
@@ -119,7 +119,7 @@ module.exports = {
       const embed = buildGameEmbed(game, null);
       const components = buildBoardComponents(game, gameId);
 
-      await interaction.reply({ content: `✅〢Stworzono grę na kanale! Powodzenia.`, ephemeral: true });
+      await interaction.reply({ content: `⎈〢Stworzono grę na kanale! Powodzenia.`, ephemeral: true });
       await interaction.channel.send({ content: `<@${interaction.user.id}> Twoja gra z Botem gotowa!`, embeds: [embed], components });
     }
 
@@ -131,7 +131,7 @@ module.exports = {
       if (queue.includes(interaction.user.id)) {
         queue = queue.filter(id => id !== interaction.user.id);
         matchmakingQueue.set(gId, queue);
-        return interaction.reply({ content: '❌〢Opuściłeś kolejkę matchmakingu.', ephemeral: true });
+        return interaction.reply({ content: '⎌〢Opuściłeś kolejkę matchmakingu.', ephemeral: true });
       }
 
       if (queue.length > 0) {
@@ -149,13 +149,13 @@ module.exports = {
         const embed = buildGameEmbed(game, null);
         const components = buildBoardComponents(game, gameId);
 
-        await interaction.reply({ content: `⚔️〢Znaleziono przeciwnika! Grajcie!`, ephemeral: true });
+        await interaction.reply({ content: `⚑〢Znaleziono przeciwnika! Grajcie!`, ephemeral: true });
         await interaction.channel.send({ content: `<@${p1}> vs <@${p2}> Gra rozpoczęta!`, embeds: [embed], components });
       } else {
         // Add to queue
         queue.push(interaction.user.id);
         matchmakingQueue.set(gId, queue);
-        await interaction.reply({ content: '⏳〢Dołączyłeś do kolejki! Oczekuję na drugiego gracza... (Kliknij ponownie by opuścić)', ephemeral: true });
+        await interaction.reply({ content: '◷〢Dołączyłeś do kolejki! Oczekuję na drugiego gracza... (Kliknij ponownie by opuścić)', ephemeral: true });
       }
     }
 
