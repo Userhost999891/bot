@@ -10,6 +10,8 @@
 
   const $ = id => document.getElementById(id);
 
+
+
   // =============================
   // INIT
   // =============================
@@ -25,6 +27,8 @@
       setupAnnouncementPreview();
       setupCategoryModal();
       setupAudio();
+      buildCustomColorPickers();
+      updateCustomSelects();
     } catch (e) {
       window.location.href = '/';
     }
@@ -278,6 +282,17 @@ function setupNavigation() {
         });
       }
 
+      const tttSelect = $('ttt-channel');
+      if (tttSelect) {
+        tttSelect.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+        channels.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.id;
+          opt.textContent = `#${ch.name} (${ch.category})`;
+          tttSelect.appendChild(opt);
+        });
+      }
+
       const container = $('visible-channels');
       container.innerHTML = '';
       channels.forEach(ch => {
@@ -288,6 +303,9 @@ function setupNavigation() {
         checkbox.addEventListener('change', () => label.classList.toggle('checked', checkbox.checked));
         container.appendChild(label);
       });
+
+      updateCustomSelects();
+
     } catch (e) {
       console.error('Error loading channels:', e);
     }
@@ -621,9 +639,12 @@ function setupNavigation() {
     $('ann-content').addEventListener('input', updatePreview);
     $('ann-footer').addEventListener('input', updatePreview);
     $('ann-color').addEventListener('input', (e) => {
-      $('ann-color-hex').textContent = e.target.value;
+      const hexEl = $('ann-color-hex');
+      if (hexEl) hexEl.textContent = e.target.value;
       updatePreviewColor(e.target.value);
     });
+    
+    buildCustomColorPickers();
   }
 
   function updatePreview() {
@@ -907,6 +928,111 @@ function setupNavigation() {
       });
     }
 
+  }
+
+  // =============================
+  // UI CUSTOM COMPONENTS
+  // =============================
+  function updateCustomSelects() {
+    document.querySelectorAll('select.config-select').forEach(select => {
+      // Hide original
+      select.style.display = 'none';
+      
+      let wrapper = select.nextElementSibling;
+      if (!wrapper || !wrapper.classList.contains('custom-select-wrapper')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        select.parentNode.insertBefore(wrapper, select.nextSibling);
+      }
+      
+      let currentLabel = '-- Wybierz --';
+      const optionsHTML = Array.from(select.options).map(opt => {
+        if (opt.selected && opt.value) currentLabel = opt.textContent;
+        const isSelected = opt.selected || opt.value === select.value;
+        return `<div class="custom-select-option ${isSelected ? 'selected' : ''}" data-value="${opt.value}">${escapeHtml(opt.textContent)}</div>`;
+      }).join('');
+      
+      wrapper.innerHTML = `
+        <div class="custom-select-trigger">
+          <span class="custom-select-label">${currentLabel}</span>
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="custom-select-options">${optionsHTML}</div>
+      `;
+      
+      const trigger = wrapper.querySelector('.custom-select-trigger');
+      const optContainer = wrapper.querySelector('.custom-select-options');
+      const label = wrapper.querySelector('.custom-select-label');
+      
+      // Toggle
+      trigger.onclick = (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.custom-select-wrapper').forEach(w => w !== wrapper && w.classList.remove('open'));
+        wrapper.classList.toggle('open');
+      };
+      
+      // Select option
+      optContainer.querySelectorAll('.custom-select-option').forEach(el => {
+        el.onclick = (e) => {
+          e.stopPropagation();
+          const val = el.getAttribute('data-value');
+          label.textContent = el.textContent;
+          select.value = val;
+          wrapper.classList.remove('open');
+          
+          // Trigger change on original
+          select.dispatchEvent(new Event('change'));
+          updateCustomSelects(); // re-render to update selected styling
+        };
+      });
+    });
+  }
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+  });
+
+  function buildCustomColorPickers() {
+    const presets = ['#5865F2', '#EB459E', '#ED4245', '#FEE75C', '#57F287', '#FFFFFF', '#000000'];
+    
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+      input.style.display = 'none';
+      let wrapper = input.nextElementSibling;
+      if (wrapper && wrapper.classList.contains('color-picker-custom-wrapper')) return;
+      
+      wrapper = document.createElement('div');
+      wrapper.className = 'color-picker-custom-wrapper';
+      
+      const presetHtml = presets.map(p => `<div class="color-preset ${input.value.toUpperCase() === p ? 'active' : ''}" style="background: ${p}" data-color="${p}"></div>`).join('');
+      
+      wrapper.innerHTML = `
+        <div class="color-picker-presets">${presetHtml}</div>
+        <div class="color-custom-row">
+          <input type="text" class="config-input" maxlength="7" value="${input.value}">
+        </div>
+      `;
+      
+      input.parentNode.insertBefore(wrapper, input.nextSibling);
+      
+      const dots = wrapper.querySelectorAll('.color-preset');
+      const hexInput = wrapper.querySelector('.config-input');
+      
+      const updateOriginal = (val) => {
+        hexInput.value = val;
+        input.value = val;
+        dots.forEach(d => d.classList.toggle('active', d.dataset.color === val.toUpperCase()));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      
+      dots.forEach(d => {
+        d.onclick = () => updateOriginal(d.dataset.color);
+      });
+      hexInput.oninput = (e) => {
+        const v = e.target.value;
+        if (/^#[0-9A-F]{6}$/i.test(v)) updateOriginal(v);
+      };
+    });
   }
 
   // =============================
