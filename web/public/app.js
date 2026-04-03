@@ -327,6 +327,7 @@
     try {
       const res = await fetch(`/api/guild/${selectedGuildId}/roles`);
       const roles = await res.json();
+      if (!Array.isArray(roles)) throw new Error(roles.error || 'Server returned invalid roles data');
       const select = $('ticket-support-role');
       select.innerHTML = '<option value="">-- Wybierz rolę --</option>';
       roles.forEach(r => {
@@ -336,13 +337,17 @@
         opt.style.color = r.color !== '#000000' ? r.color : '';
         select.appendChild(opt);
       });
-    } catch (e) { console.error('Error loading roles:', e); }
+    } catch (e) {
+      console.error('Error loading roles:', e);
+      alert('Nie udało się załadować listy ról: ' + e.message);
+    }
   }
 
   async function loadDiscordCategories() {
     try {
       const res = await fetch(`/api/guild/${selectedGuildId}/categories`);
       const cats = await res.json();
+      if (!Array.isArray(cats)) throw new Error(cats.error || 'Server returned invalid categories data');
       const select = $('cat-discord-category');
       select.innerHTML = '<option value="">-- Bez kategorii --</option>';
       cats.forEach(c => {
@@ -351,7 +356,10 @@
         opt.textContent = c.name;
         select.appendChild(opt);
       });
-    } catch (e) { console.error('Error loading discord categories:', e); }
+    } catch (e) {
+      console.error('Error loading discord categories:', e);
+      alert('Nie udało się załadować listy kategorii: ' + e.message);
+    }
   }
 
   async function loadTicketCategories() {

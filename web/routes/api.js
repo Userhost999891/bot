@@ -72,28 +72,38 @@ module.exports = function(discordClient) {
 
   // Get categories (Discord channel categories) for a guild
   router.get('/guild/:id/categories', authMiddleware, async (req, res) => {
-    const guild = discordClient.guilds.cache.get(req.params.id);
-    if (!guild) return res.status(404).json({ error: 'Guild not found' });
+    try {
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const categories = guild.channels.cache
-      .filter(c => c.type === 4) // GUILD_CATEGORY
-      .map(c => ({ id: c.id, name: c.name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      const categories = guild.channels.cache
+        .filter(c => c.type === 4) // GUILD_CATEGORY
+        .map(c => ({ id: c.id, name: c.name }))
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-    res.json(categories);
+      res.json(categories);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Get roles for a guild
   router.get('/guild/:id/roles', authMiddleware, async (req, res) => {
-    const guild = discordClient.guilds.cache.get(req.params.id);
-    if (!guild) return res.status(404).json({ error: 'Guild not found' });
+    try {
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const roles = guild.roles.cache
-      .filter(r => r.name !== '@everyone')
-      .map(r => ({ id: r.id, name: r.name, color: r.hexColor, position: r.position }))
-      .sort((a, b) => b.position - a.position);
+      const roles = guild.roles.cache
+        .filter(r => r.name !== '@everyone')
+        .map(r => ({ id: r.id, name: r.name, color: r.hexColor, position: r.position }))
+        .sort((a, b) => b.position - a.position);
 
-    res.json(roles);
+      res.json(roles);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Get verification config
