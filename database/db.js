@@ -88,12 +88,12 @@ async function getPool() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         guild_id VARCHAR(20) NOT NULL,
         name VARCHAR(100) NOT NULL,
-        emoji VARCHAR(50) DEFAULT '📋',
+        emoji VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '📋',
         description VARCHAR(255) DEFAULT '',
         discord_category_id VARCHAR(20),
         color VARCHAR(20) DEFAULT '#5865F2',
         sort_order INT DEFAULT 0
-      )
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     `);
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS active_tickets (
