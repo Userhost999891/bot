@@ -14,7 +14,8 @@ async function getPool() {
     database: process.env.MYSQL_DATABASE,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    charset: 'utf8mb4'
   });
 
   try {
@@ -125,6 +126,14 @@ async function getPool() {
         PRIMARY KEY (guild_id, user_id)
       )
     `);
+
+    // Ensure utf8mb4 conversion for dynamic discord inputs containing emojis
+    const tables = ['guild_config', 'ticket_config', 'announcements_config', 'reward_servers', 'ticket_categories'];
+    for (const tableName of tables) {
+      try {
+        await pool.execute(`ALTER TABLE ${tableName} CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      } catch(e) {}
+    }
 
     // Ensure connection is OK
     await pool.query('SELECT 1');
