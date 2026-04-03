@@ -16,11 +16,36 @@ module.exports = function(discordClient) {
 
   // Get guilds where bot is present AND user has admin perms
   router.get('/guilds', authMiddleware, async (req, res) => {
+    // Odświeżanie serwerów w locie żeby uniknąć wylogowywania (UX fix)
+    if (req.session.accessToken) {
+      try {
+        const fetch = require('node-fetch');
+        const guildsResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+          headers: { Authorization: `Bearer ${req.session.accessToken}` }
+        });
+        if (guildsResponse.ok) {
+          const freshGuilds = await guildsResponse.json();
+          if (Array.isArray(freshGuilds)) {
+            req.session.user.guilds = freshGuilds;
+          }
+        }
+      } catch (e) {
+        // Zignoruj i użyj cache jeśli nie siądzie internet
+      }
+    }
+
     const userGuilds = req.session.user.guilds || [];
     const botGuilds = discordClient.guilds.cache;
 
     const manageable = userGuilds.filter(g => {
-      const isAdmin = (parseInt(g.permissions) & 0x8) === 0x8;
+      // Prawidłowe sprawdzanie uprawnień BigInt + Weryfikacja czy jest właścicielem
+      let isAdmin = g.owner === true;
+      try {
+        if (!isAdmin && g.permissions) {
+          isAdmin = (BigInt(g.permissions) & 8n) === 8n;
+        }
+      } catch (e) {}
+
       const botIn = botGuilds.has(g.id);
       return isAdmin && botIn;
     }).map(g => ({
