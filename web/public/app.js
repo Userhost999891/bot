@@ -24,6 +24,7 @@
       setupColorPickers();
       setupAnnouncementPreview();
       setupCategoryModal();
+      setupAudio();
     } catch (e) {
       window.location.href = '/';
     }
@@ -37,10 +38,56 @@
     $('user-name').textContent = user.username;
   }
 
-  // =============================
-  // NAVIGATION
-  // =============================
-  function setupNavigation() {
+// =============================
+// UI SOUND MANAGER & NAVIGATION
+// =============================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, type, duration, vol=0.1) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+const UI = {
+  hover: () => playTone(600, 'sine', 0.05, 0.02),
+  click: () => playTone(300, 'triangle', 0.08, 0.04),
+  success: () => {
+    playTone(400, 'sine', 0.1, 0.04);
+    setTimeout(() => playTone(600, 'sine', 0.2, 0.04), 100);
+  },
+  error: () => {
+    playTone(150, 'sawtooth', 0.15, 0.04);
+    setTimeout(() => playTone(100, 'sawtooth', 0.2, 0.04), 150);
+  }
+};
+
+function setupAudio() {
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.closest('.action-btn, .sidebar-item, .stat-card, .category-card, .server-card, .channel-checkbox')) {
+      UI.hover();
+    }
+  });
+  
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.action-btn, .sidebar-item, .server-card, .channel-checkbox')) {
+      UI.click();
+    }
+  });
+}
+
+function setupNavigation() {
     document.querySelectorAll('.sidebar-item').forEach(item => {
       item.addEventListener('click', () => {
         const section = item.dataset.section;
@@ -793,6 +840,10 @@
   // UTILITIES
   // =============================
   function showSectionStatus(prefix, message, type) {
+    if (type === 'success') UI.success();
+    else if (type === 'error') UI.error();
+    else UI.click();
+
     const bar = $(`${prefix}-status-bar`);
     const msg = $(`${prefix}-status-message`);
     if (!bar || !msg) return;

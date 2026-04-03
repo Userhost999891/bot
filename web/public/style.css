@@ -1,14 +1,14 @@
 /* === NarisMC Core Panel — Ultra Premium Dark Glassmorphism === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg-primary: #06060e;
-  --bg-secondary: #0a0a18;
-  --bg-card: rgba(16, 16, 32, 0.65);
-  --bg-card-solid: #101020;
-  --bg-card-hover: rgba(26, 26, 50, 0.75);
-  --bg-input: rgba(20, 20, 40, 0.8);
-  --bg-sidebar: rgba(8, 8, 18, 0.92);
+  --bg-primary: #030308;
+  --bg-secondary: #080812;
+  --bg-card: rgba(12, 12, 22, 0.55);
+  --bg-card-solid: #0A0A12;
+  --bg-card-hover: rgba(22, 22, 40, 0.7);
+  --bg-input: rgba(16, 16, 32, 0.7);
+  --bg-sidebar: rgba(6, 6, 12, 0.88);
   --bg-glass: rgba(255, 255, 255, 0.03);
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.12);
@@ -38,15 +38,20 @@
   --radius-sm: 10px;
   --radius-lg: 20px;
   --radius-xl: 24px;
-  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: 0.15s ease;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 60px rgba(88, 101, 242, 0.08);
+  --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 30px 100px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 80px rgba(88, 101, 242, 0.15);
   --sidebar-width: 270px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+h1, h2, h3, h4, h5, h6, .login-title, .section-title, .sidebar-title, .stat-value {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+}
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -521,6 +526,14 @@ body {
 .action-btn:active { transform: translateY(0); }
 .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .action-btn:disabled::after { display: none; }
+
+.action-btn, .login-btn {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.05);
+}
 .action-btn-save { background: linear-gradient(135deg, var(--accent), #4752C4); box-shadow: 0 4px 20px var(--accent-glow); }
 .action-btn-save:hover { box-shadow: 0 8px 30px var(--accent-glow); }
 .action-btn-roles { background: linear-gradient(135deg, var(--purple), #8e44ad); box-shadow: 0 4px 20px var(--purple-glow); }
