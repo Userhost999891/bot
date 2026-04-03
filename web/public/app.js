@@ -267,7 +267,7 @@
         body: JSON.stringify({ verification_channel_id: verificationChannelId, verified_role_name: verifiedRoleName, unverified_role_name: unverifiedRoleName, visible_channels: visibleChannels })
       });
       const data = await res.json();
-      showSectionStatus('ver', data.message || 'Zapisano!', data.success ? 'success' : 'error');
+      showSectionStatus('ver', data.message || data.error || 'Zapisano!', data.success ? 'success' : 'error');
     } catch (e) { showSectionStatus('ver', 'Błąd zapisu', 'error'); }
     finally { disableButtons(false); }
   }
