@@ -1,6 +1,6 @@
 // Rewards API — multi-server management
 const express = require('express');
-const { getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer } = require('../../database/mysql');
+const { getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer } = require('../../database/db');
 const { refreshChannelCache, setupRewardChannelPerms } = require('../../modules/rewards/handler');
 
 function authMiddleware(req, res, next) {

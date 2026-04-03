@@ -17,7 +17,7 @@ const MAX_TICKETS_DEFAULT = 50;
  * Build and send the ticket panel embed with select menu
  */
 async function sendTicketPanel(channel, guild) {
-  const categories = getTicketCategories(guild.id);
+  const categories = await getTicketCategories(guild.id);
 
   if (categories.length === 0) {
     return { success: false, message: 'Najpierw dodaj kategorie ticketów w panelu WWW!' };
@@ -56,8 +56,8 @@ async function handleTicketCreate(interaction) {
   const user = interaction.user;
   const categoryId = interaction.values[0].replace('ticket_cat_', '');
 
-  const ticketConfig = getTicketConfig(guild.id);
-  const categories = getTicketCategories(guild.id);
+  const ticketConfig = await getTicketConfig(guild.id);
+  const categories = await getTicketCategories(guild.id);
   const category = categories.find(c => c.id === parseInt(categoryId));
 
   if (!category) {
@@ -66,7 +66,7 @@ async function handleTicketCreate(interaction) {
 
   // === CHECK: Max tickets limit ===
   const maxTickets = ticketConfig?.max_tickets || MAX_TICKETS_DEFAULT;
-  const activeCount = countActiveTickets(guild.id);
+  const activeCount = await countActiveTickets(guild.id);
 
   if (activeCount >= maxTickets) {
     return interaction.reply({
@@ -76,7 +76,7 @@ async function handleTicketCreate(interaction) {
   }
 
   // === CHECK: User cooldown (5 min) ===
-  const lastTicketTime = getLastUserTicketTime(guild.id, user.id);
+  const lastTicketTime = await getLastUserTicketTime(guild.id, user.id);
   if (lastTicketTime) {
     const lastTime = new Date(lastTicketTime + 'Z').getTime();
     const elapsed = Date.now() - lastTime;
@@ -93,7 +93,7 @@ async function handleTicketCreate(interaction) {
   }
 
   // === CHECK: User already has open ticket in this category ===
-  const userTickets = countUserActiveTickets(guild.id, user.id);
+  const userTickets = await countUserActiveTickets(guild.id, user.id);
   if (userTickets >= 3) {
     return interaction.reply({
       content: `❌〢Masz już **${userTickets}** otwarte tickety. Zamknij stare zanim otworzysz nowe.`,
@@ -104,7 +104,7 @@ async function handleTicketCreate(interaction) {
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    const ticketNumber = getNextTicketNumber(guild.id);
+    const ticketNumber = await getNextTicketNumber(guild.id);
     const channelName = `ticket-${String(ticketNumber).padStart(4, '0')}`;
 
     // Permission overwrites — only ticket creator + support + admins
@@ -158,7 +158,7 @@ async function handleTicketCreate(interaction) {
     });
 
     // Save to database
-    createActiveTicket(guild.id, ticketChannel.id, user.id, category.name, ticketNumber);
+    await createActiveTicket(guild.id, ticketChannel.id, user.id, category.name, ticketNumber);
 
     // Build ticket embed inside the channel
     const ticketEmbed = new EmbedBuilder()
@@ -212,7 +212,7 @@ async function handleTicketCreate(interaction) {
  * Handle ticket close button
  */
 async function handleTicketClose(interaction) {
-  const ticket = getActiveTicket(interaction.channel.id);
+  const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
     return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
   }
@@ -230,7 +230,7 @@ async function handleTicketClose(interaction) {
 
   setTimeout(async () => {
     try {
-      deleteActiveTicket(interaction.channel.id);
+      await deleteActiveTicket(interaction.channel.id);
       await interaction.channel.delete('Ticket zamknięty');
     } catch (e) {
       console.error('Error deleting ticket channel:', e);
@@ -242,7 +242,7 @@ async function handleTicketClose(interaction) {
  * Handle ticket claim button
  */
 async function handleTicketClaim(interaction) {
-  const ticket = getActiveTicket(interaction.channel.id);
+  const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
     return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
   }
@@ -254,7 +254,7 @@ async function handleTicketClaim(interaction) {
     });
   }
 
-  claimTicket(interaction.channel.id, interaction.user.id);
+  await claimTicket(interaction.channel.id, interaction.user.id);
 
   const claimEmbed = new EmbedBuilder()
     .setDescription(`📋〢${interaction.user} odebrał ten ticket.`)

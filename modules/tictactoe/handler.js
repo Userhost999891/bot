@@ -203,7 +203,7 @@ async function handleMove(interaction, gameId, position) {
   // Bot move
   if (game.isBot && game.currentTurn === game.player2) {
     // Calculate difficulty based on player stats
-    const stats = getTTTStats(interaction.guild.id, game.player1);
+    const stats = await getTTTStats(interaction.guild.id, game.player1);
     const totalGames = stats.wins + stats.losses + stats.draws;
     // Adaptive: 50% mistake rate at start, goes down to 20% with more wins
     const difficulty = Math.min(0.8, 0.5 + (stats.wins * 0.03));
@@ -233,29 +233,29 @@ async function finishGame(interaction, gameId, game, result) {
   const guildId = interaction.guild.id;
 
   if (result.winner === 'draw') {
-    updateTTTStats(guildId, game.player1, 'draw');
-    if (!game.isBot) updateTTTStats(guildId, game.player2, 'draw');
+    await updateTTTStats(guildId, game.player1, 'draw');
+    if (!game.isBot) await updateTTTStats(guildId, game.player2, 'draw');
   } else if (result.winner === 'X') {
-    updateTTTStats(guildId, game.player1, 'win');
+    await updateTTTStats(guildId, game.player1, 'win');
     if (game.isBot) {
       // no bot stats
     } else {
-      updateTTTStats(guildId, game.player2, 'loss');
+      await updateTTTStats(guildId, game.player2, 'loss');
     }
   } else {
-    updateTTTStats(guildId, game.player1, 'loss');
-    if (!game.isBot) updateTTTStats(guildId, game.player2, 'win');
+    await updateTTTStats(guildId, game.player1, 'loss');
+    if (!game.isBot) await updateTTTStats(guildId, game.player2, 'win');
   }
 
   const embed = buildGameEmbed(game, result);
   const components = buildBoardComponents(game, gameId, true);
 
   // Show stats
-  const stats1 = getTTTStats(guildId, game.player1);
+  const stats1 = await getTTTStats(guildId, game.player1);
   embed.addFields({
     name: '📊 Statystyki',
     value: `<@${game.player1}>: ${stats1.wins}W/${stats1.losses}L/${stats1.draws}D` +
-      (!game.isBot ? `\n<@${game.player2}>: ${getTTTStats(guildId, game.player2).wins}W/${getTTTStats(guildId, game.player2).losses}L/${getTTTStats(guildId, game.player2).draws}D` : ''),
+      (!game.isBot ? `\n<@${game.player2}>: ${await getTTTStats(guildId, game.player2).wins}W/${await getTTTStats(guildId, game.player2).losses}L/${await getTTTStats(guildId, game.player2).draws}D` : ''),
     inline: false
   });
 

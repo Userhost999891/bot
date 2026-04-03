@@ -3,7 +3,7 @@ const { getConfig, getSavedRoles, deleteSavedRoles } = require('../../database/d
 
 async function handleVerification(interaction, guild) {
   const { EmbedBuilder } = require('discord.js');
-  const config = getConfig(guild.id);
+  const config = await getConfig(guild.id);
   if (!config) {
     return interaction.reply({ 
       embeds: [new EmbedBuilder().setDescription('❌〢Weryfikacja nie jest skonfigurowana na tym serwerze.').setColor(0xf04747)], 
@@ -32,7 +32,7 @@ async function handleVerification(interaction, guild) {
 }
 
 async function assignVerifiedRole(interaction, guild) {
-  const config = getConfig(guild.id);
+  const config = await getConfig(guild.id);
   if (!config) return false;
 
   // Always fully fetch to prevent any cache issues or missing member data
@@ -56,7 +56,7 @@ async function assignVerifiedRole(interaction, guild) {
       await member.roles.remove(unverifiedRole, 'Użytkownik się zweryfikował').catch(() => {});
     }
 
-    const savedRoleIds = getSavedRoles(guild.id, member.user.id);
+    const savedRoleIds = await getSavedRoles(guild.id, member.user.id);
     if (savedRoleIds && savedRoleIds.length > 0) {
       let restored = 0;
       for (const roleId of savedRoleIds) {
@@ -70,7 +70,7 @@ async function assignVerifiedRole(interaction, guild) {
           }
         }
       }
-      deleteSavedRoles(guild.id, member.user.id);
+      await deleteSavedRoles(guild.id, member.user.id);
       console.log(`✅ Przywrócono ${restored} zapisanych ról dla ${member.user.tag}`);
     } else {
       const graczRole = guild.roles.cache.find(r => r.name === '💎・Gracz' || r.name.toLowerCase().includes('gracz'));

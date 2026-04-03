@@ -17,8 +17,8 @@ module.exports = function(discordClient) {
   const router = express.Router();
 
   // Get ticket config
-  router.get('/guild/:id/config', authMiddleware, (req, res) => {
-    const config = getTicketConfig(req.params.id);
+  router.get('/guild/:id/config', authMiddleware, async (req, res) => {
+    const config = await getTicketConfig(req.params.id);
     res.json(config || {
       guild_id: req.params.id,
       ticket_channel_id: null,
@@ -28,25 +28,25 @@ module.exports = function(discordClient) {
   });
 
   // Save ticket config
-  router.post('/guild/:id/config', authMiddleware, (req, res) => {
+  router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     const { ticket_channel_id, support_role_id, log_channel_id } = req.body;
-    setTicketConfig(req.params.id, { ticket_channel_id, support_role_id, log_channel_id });
+    await setTicketConfig(req.params.id, { ticket_channel_id, support_role_id, log_channel_id });
     res.json({ success: true, message: 'Konfiguracja ticketów zapisana!' });
   });
 
   // Get ticket categories
-  router.get('/guild/:id/categories', authMiddleware, (req, res) => {
-    const categories = getTicketCategories(req.params.id);
+  router.get('/guild/:id/categories', authMiddleware, async (req, res) => {
+    const categories = await getTicketCategories(req.params.id);
     res.json(categories);
   });
 
   // Add ticket category
-  router.post('/guild/:id/categories', authMiddleware, (req, res) => {
+  router.post('/guild/:id/categories', authMiddleware, async (req, res) => {
     const { name, emoji, description, discord_category_id, color } = req.body;
     if (!name) return res.status(400).json({ error: 'Nazwa kategorii jest wymagana!' });
 
-    const categories = getTicketCategories(req.params.id);
-    addTicketCategory(req.params.id, {
+    const categories = await getTicketCategories(req.params.id);
+    await addTicketCategory(req.params.id, {
       name, emoji, description, discord_category_id, color,
       sort_order: categories.length
     });
@@ -55,15 +55,15 @@ module.exports = function(discordClient) {
   });
 
   // Update ticket category
-  router.put('/guild/:id/categories/:catId', authMiddleware, (req, res) => {
+  router.put('/guild/:id/categories/:catId', authMiddleware, async (req, res) => {
     const { name, emoji, description, discord_category_id, color } = req.body;
-    updateTicketCategory(parseInt(req.params.catId), { name, emoji, description, discord_category_id, color });
+    await updateTicketCategory(parseInt(req.params.catId), { name, emoji, description, discord_category_id, color });
     res.json({ success: true, message: 'Kategoria zaktualizowana!' });
   });
 
   // Delete ticket category
-  router.delete('/guild/:id/categories/:catId', authMiddleware, (req, res) => {
-    deleteTicketCategory(parseInt(req.params.catId));
+  router.delete('/guild/:id/categories/:catId', authMiddleware, async (req, res) => {
+    await deleteTicketCategory(parseInt(req.params.catId));
     res.json({ success: true, message: 'Kategoria usunięta!' });
   });
 
@@ -72,7 +72,7 @@ module.exports = function(discordClient) {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const config = getTicketConfig(req.params.id);
+    const config = await getTicketConfig(req.params.id);
     if (!config || !config.ticket_channel_id) {
       return res.status(400).json({ error: 'Najpierw skonfiguruj kanał ticketów!' });
     }
@@ -85,7 +85,7 @@ module.exports = function(discordClient) {
     try {
       const result = await sendTicketPanel(channel, guild);
       if (result.success) {
-        setTicketConfig(req.params.id, { ticket_message_id: result.messageId });
+        await setTicketConfig(req.params.id, { ticket_message_id: result.messageId });
         res.json({ success: true, message: 'Panel ticketów wysłany!' });
       } else {
         res.status(400).json({ error: result.message });

@@ -14,7 +14,7 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
-    const config = getConfig(interaction.guild.id);
+    const config = await getConfig(interaction.guild.id);
     if (!config || !config.unverified_role_name || !config.verified_role_name) {
       return interaction.reply({ content: '❌〢System nie jest w pełni skonfigurowany.', ephemeral: true });
     }
@@ -37,7 +37,7 @@ module.exports = {
           .map(r => r.id);
 
         if (roleIds.length > 0) {
-          saveUserRoles(interaction.guild.id, member.user.id, roleIds);
+          await saveUserRoles(interaction.guild.id, member.user.id, roleIds);
         }
 
         const rolesToRemove = member.roles.cache.filter(r => r.name !== '@everyone');
@@ -72,7 +72,7 @@ module.exports = {
             .map(r => r.id);
 
           if (roleIds.length > 0) {
-            saveUserRoles(interaction.guild.id, member.user.id, roleIds);
+            await saveUserRoles(interaction.guild.id, member.user.id, roleIds);
             savedCount++;
           }
 

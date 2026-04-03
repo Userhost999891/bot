@@ -132,7 +132,7 @@ async function challengePlayer(interaction) {
 }
 
 async function showLeaderboard(interaction) {
-  const leaderboard = getTTTLeaderboard(interaction.guild.id, 10);
+  const leaderboard = await getTTTLeaderboard(interaction.guild.id, 10);
 
   if (leaderboard.length === 0) {
     return interaction.reply({
@@ -165,7 +165,7 @@ async function showLeaderboard(interaction) {
 }
 
 async function showStats(interaction) {
-  const stats = getTTTStats(interaction.guild.id, interaction.user.id);
+  const stats = await getTTTStats(interaction.guild.id, interaction.user.id);
   const total = stats.wins + stats.losses + stats.draws;
   const winRate = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
 

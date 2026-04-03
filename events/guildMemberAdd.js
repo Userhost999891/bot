@@ -4,7 +4,7 @@ const { getConfig } = require('../database/db');
 module.exports = {
   name: 'guildMemberAdd',
   async execute(member) {
-    const config = getConfig(member.guild.id);
+    const config = await getConfig(member.guild.id);
     if (!config) return;
 
     const unverifiedRole = member.guild.roles.cache.find(r => r.name === config.unverified_role_name);

@@ -1,6 +1,6 @@
 // Rewards module — listens for nicks on configured channels, saves to MySQL per server
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { hasClaimedReward, addPendingReward, getAllRewardChannels, getServerByChannel } = require('../../database/mysql');
+const { hasClaimedReward, addPendingReward, getAllRewardChannels, getServerByChannel } = require('../../database/db');
 
 // Cache: channel_id → { server_id, server_name, guild_id }
 let rewardChannels = new Map();

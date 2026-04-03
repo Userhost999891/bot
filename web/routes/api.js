@@ -15,7 +15,7 @@ module.exports = function(discordClient) {
   const router = express.Router();
 
   // Get guilds where bot is present AND user has admin perms
-  router.get('/guilds', authMiddleware, (req, res) => {
+  router.get('/guilds', authMiddleware, async (req, res) => {
     const userGuilds = req.session.user.guilds || [];
     const botGuilds = discordClient.guilds.cache;
 
@@ -33,7 +33,7 @@ module.exports = function(discordClient) {
   });
 
   // Get channels for a guild
-  router.get('/guild/:id/channels', authMiddleware, (req, res) => {
+  router.get('/guild/:id/channels', authMiddleware, async (req, res) => {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
@@ -46,7 +46,7 @@ module.exports = function(discordClient) {
   });
 
   // Get categories (Discord channel categories) for a guild
-  router.get('/guild/:id/categories', authMiddleware, (req, res) => {
+  router.get('/guild/:id/categories', authMiddleware, async (req, res) => {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
@@ -59,7 +59,7 @@ module.exports = function(discordClient) {
   });
 
   // Get roles for a guild
-  router.get('/guild/:id/roles', authMiddleware, (req, res) => {
+  router.get('/guild/:id/roles', authMiddleware, async (req, res) => {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
@@ -72,8 +72,8 @@ module.exports = function(discordClient) {
   });
 
   // Get verification config
-  router.get('/guild/:id/config', authMiddleware, (req, res) => {
-    const config = getConfig(req.params.id);
+  router.get('/guild/:id/config', authMiddleware, async (req, res) => {
+    const config = await getConfig(req.params.id);
     res.json(config || {
       guild_id: req.params.id,
       verification_channel_id: null,
@@ -84,10 +84,10 @@ module.exports = function(discordClient) {
   });
 
   // Save verification config
-  router.post('/guild/:id/config', authMiddleware, (req, res) => {
+  router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels } = req.body;
 
-    setConfig(req.params.id, {
+    await setConfig(req.params.id, {
       verification_channel_id,
       verified_role_name,
       unverified_role_name,
@@ -102,7 +102,7 @@ module.exports = function(discordClient) {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const config = getConfig(req.params.id);
+    const config = await getConfig(req.params.id);
     const verifiedName = config?.verified_role_name || 'Zweryfikowany';
     const unverifiedName = config?.unverified_role_name || 'Niezweryfikowany';
 
@@ -149,7 +149,7 @@ module.exports = function(discordClient) {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const config = getConfig(req.params.id);
+    const config = await getConfig(req.params.id);
     if (!config) return res.status(400).json({ error: 'Brak konfiguracji' });
 
     const unverifiedRole = guild.roles.cache.find(r => r.name === config.unverified_role_name);
@@ -212,7 +212,7 @@ module.exports = function(discordClient) {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const config = getConfig(req.params.id);
+    const config = await getConfig(req.params.id);
     if (!config || !config.verification_channel_id) {
       return res.status(400).json({ error: 'Najpierw skonfiguruj kanał weryfikacji!' });
     }
@@ -244,7 +244,7 @@ module.exports = function(discordClient) {
       );
 
       const msg = await channel.send({ embeds: [embed], components: [button] });
-      setConfig(req.params.id, { verification_message_id: msg.id });
+      await setConfig(req.params.id, { verification_message_id: msg.id });
 
       res.json({ success: true, message: 'Wiadomość weryfikacyjna wysłana!' });
     } catch (error) {
@@ -254,7 +254,7 @@ module.exports = function(discordClient) {
   });
 
   // Get client ID for invite
-  router.get('/client-id', (req, res) => {
+  router.get('/client-id', async (req, res) => {
     res.json({ clientId: process.env.DISCORD_CLIENT_ID });
   });
 
@@ -291,7 +291,7 @@ module.exports = function(discordClient) {
   // TTT Leaderboard
   router.get('/guild/:id/ttt-leaderboard', authMiddleware, async (req, res) => {
     const { getTTTLeaderboard } = require('../../database/db');
-    const leaderboard = getTTTLeaderboard(req.params.id, 10);
+    const leaderboard = await getTTTLeaderboard(req.params.id, 10);
 
     // Add usernames
     const guild = discordClient.guilds.cache.get(req.params.id);

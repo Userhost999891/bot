@@ -22,7 +22,7 @@ module.exports = {
     const module = interaction.options.getString('modul');
 
     if (module === 'verification') {
-      const config = getConfig(interaction.guild.id);
+      const config = await getConfig(interaction.guild.id);
 
       if (!config || !config.verification_channel_id) {
         return interaction.reply({
@@ -60,7 +60,7 @@ module.exports = {
       );
 
       const msg = await channel.send({ embeds: [embed], components: [button] });
-      setConfig(interaction.guild.id, { verification_message_id: msg.id });
+      await setConfig(interaction.guild.id, { verification_message_id: msg.id });
 
       await interaction.reply({
         content: `✅〢Wiadomość weryfikacyjna została wysłana na kanał ${channel}!`,
@@ -72,7 +72,7 @@ module.exports = {
 
       if (result.success) {
         const { setTicketConfig } = require('../database/db');
-        setTicketConfig(interaction.guild.id, { ticket_channel_id: interaction.channel.id, ticket_message_id: result.messageId });
+        await setTicketConfig(interaction.guild.id, { ticket_channel_id: interaction.channel.id, ticket_message_id: result.messageId });
 
         await interaction.reply({
           content: '✅〢Panel ticketów został wysłany!',

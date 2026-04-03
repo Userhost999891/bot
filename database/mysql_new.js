@@ -157,3 +157,7 @@ module.exports = {
   getAllRewardChannels, getServerByChannel,
   hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed
 };
+
+
+/* MIGRATION START */
+

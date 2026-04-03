@@ -14,8 +14,8 @@ module.exports = function(discordClient) {
   const router = express.Router();
 
   // Get config
-  router.get('/guild/:id/config', authMiddleware, (req, res) => {
-    const config = getAnnouncementsConfig(req.params.id);
+  router.get('/guild/:id/config', authMiddleware, async (req, res) => {
+    const config = await getAnnouncementsConfig(req.params.id);
     res.json(config || {
       guild_id: req.params.id,
       default_channel_id: null,
@@ -25,9 +25,9 @@ module.exports = function(discordClient) {
   });
 
   // Save config
-  router.post('/guild/:id/config', authMiddleware, (req, res) => {
+  router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     const { default_channel_id, default_color, footer_text } = req.body;
-    setAnnouncementsConfig(req.params.id, { default_channel_id, default_color, footer_text });
+    await setAnnouncementsConfig(req.params.id, { default_channel_id, default_color, footer_text });
     res.json({ success: true, message: 'Konfiguracja ogłoszeń zapisana!' });
   });
 
