@@ -110,16 +110,21 @@ module.exports = function(discordClient) {
 
   // Save verification config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
-    const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels } = req.body;
+    try {
+      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels } = req.body;
 
-    await setConfig(req.params.id, {
-      verification_channel_id,
-      verified_role_name,
-      unverified_role_name,
-      visible_channels: visible_channels || []
-    });
+      await setConfig(req.params.id, {
+        verification_channel_id,
+        verified_role_name,
+        unverified_role_name,
+        visible_channels: visible_channels || []
+      });
 
-    res.json({ success: true, message: 'Konfiguracja zapisana!' });
+      res.json({ success: true, message: 'Konfiguracja zapisana!' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'DB Error: ' + e.message });
+    }
   });
 
   // Create roles

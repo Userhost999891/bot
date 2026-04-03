@@ -30,8 +30,17 @@ module.exports = function(discordClient) {
   // Save ticket config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     const { ticket_channel_id, support_role_id, log_channel_id } = req.body;
-    await setTicketConfig(req.params.id, { ticket_channel_id, support_role_id, log_channel_id });
-    res.json({ success: true, message: 'Konfiguracja ticketów zapisana!' });
+    try {
+      await setTicketConfig(req.params.id, {
+        ticket_channel_id,
+        support_role_id,
+        log_channel_id
+      });
+      res.json({ success: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'DB Error: ' + e.message });
+    }
   });
 
   // Get ticket categories
