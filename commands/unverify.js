@@ -8,8 +8,8 @@ module.exports = {
     .setDescription('Zabiera weryfikację użytkownikowi lub wszystkim')
     .addUserOption(option =>
       option.setName('user')
-        .setDescription('Użytkownik do cofnięcia weryfikacji (zostaw puste aby cofnąć WSZYSTKIM)')
-        .setRequired(false)
+        .setDescription('Użytkownik do cofnięcia weryfikacji')
+        .setRequired(true)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
