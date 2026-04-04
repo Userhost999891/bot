@@ -16,24 +16,25 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     const guild = interaction.guild;
-    const config = await getConfig(guild.id);
-
-    if (!config) {
-      return interaction.editReply({
-        embeds: [new EmbedBuilder()
-          .setDescription('Brak konfiguracji weryfikacji dla tego serwera. Skonfiguruj najpierw w panelu webowym.')
-          .setColor(0xf04747)]
-      });
-    }
-
-    const verifiedName = config.verified_role_name || 'Zweryfikowany';
-    const unverifiedName = config.unverified_role_name || 'Niezweryfikowany';
+    let verifiedName = 'Zweryfikowany';
+    let unverifiedName = 'Niezweryfikowany';
 
     const log = [];
-    let fixedMembers = 0;
     let deletedRoles = 0;
 
     try {
+      const config = await getConfig(guild.id);
+      if (!config) {
+        return interaction.editReply({
+          embeds: [new EmbedBuilder()
+            .setDescription('Brak konfiguracji weryfikacji dla tego serwera. Skonfiguruj najpierw w panelu webowym.')
+            .setColor(0xf04747)]
+        });
+      }
+
+      verifiedName = config.verified_role_name || 'Zweryfikowany';
+      unverifiedName = config.unverified_role_name || 'Niezweryfikowany';
+
       // =============================================
       // PHASE 1: Deduplicate roles
       // =============================================
