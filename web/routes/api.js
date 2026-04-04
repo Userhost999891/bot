@@ -180,6 +180,7 @@ module.exports = function(discordClient) {
     const updated = [];
 
     try {
+      await guild.roles.fetch(); // Force fresh fetch to avoid creating duplicates
       let verifiedRole = guild.roles.cache.find(r => r.name === verifiedName);
       if (!verifiedRole) {
         verifiedRole = await guild.roles.create({
