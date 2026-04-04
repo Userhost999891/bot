@@ -33,71 +33,69 @@ module.exports = {
     // =============================================
     // PHASE 1: Deduplicate roles with the same name
     // =============================================
-    log.push('**FAZA 1** — Analiza duplikatów ról');
+    log.push('**FAZA 1** — Analiza duplikatow rol');
 
     await guild.roles.fetch();
 
-    const verifiedRoles = guild.roles.cache.filter(r => r.name === verifiedName);
-    const unverifiedRoles = guild.roles.cache.filter(r => r.name === unverifiedName);
+    // Fuzzy match: find all roles that contain the verified/unverified name (case-insensitive)
+    const verifiedNameLower = verifiedName.toLowerCase();
+    const unverifiedNameLower = unverifiedName.toLowerCase();
+
+    const verifiedRoles = guild.roles.cache.filter(r => r.name.toLowerCase().includes(verifiedNameLower));
+    const unverifiedRoles = guild.roles.cache.filter(r => r.name.toLowerCase().includes(unverifiedNameLower));
 
     let keepVerified = null;
     let keepUnverified = null;
 
-    // Keep the oldest role (lowest position = created first), delete the rest
-    if (verifiedRoles.size > 1) {
-      const sorted = [...verifiedRoles.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-      keepVerified = sorted[0];
-      for (let i = 1; i < sorted.length; i++) {
-        // Before deleting, migrate members from the duplicate role to the kept one
-        const membersWithDupe = guild.members.cache.filter(m => m.roles.cache.has(sorted[i].id));
+    // Helper: process a group of duplicate roles
+    // Prefers exact name match as the one to keep, otherwise oldest
+    async function deduplicateRoles(roles, exactName, label) {
+      if (roles.size === 0) {
+        log.push(`Rola "${label}": BRAK — nie istnieje na serwerze`);
+        return null;
+      }
+
+      const sorted = [...roles.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+      // Prefer exact match as the one to keep
+      let keep = sorted.find(r => r.name === exactName) || sorted[0];
+
+      if (roles.size === 1) {
+        log.push(`Rola "${label}": OK (1 instancja: "${keep.name}")`);
+        return keep;
+      }
+
+      // Log all found variants
+      const variants = sorted.map(r => `"${r.name}" (${r.id})`).join(', ');
+      log.push(`Rola "${label}": znaleziono ${roles.size} wariantow: ${variants}`);
+
+      // Fetch all members to migrate properly
+      await guild.members.fetch();
+
+      for (const role of sorted) {
+        if (role.id === keep.id) continue; // skip the one we keep
+
+        const membersWithDupe = guild.members.cache.filter(m => m.roles.cache.has(role.id));
         for (const [, member] of membersWithDupe) {
           try {
-            if (!member.roles.cache.has(keepVerified.id)) {
-              await member.roles.add(keepVerified, 'SafeIT: migracja z duplikatu roli');
+            if (!member.roles.cache.has(keep.id)) {
+              await member.roles.add(keep, `SafeIT: migracja z "${role.name}" na "${keep.name}"`);
             }
           } catch(e) {}
         }
         try {
-          await sorted[i].delete('SafeIT: usuwanie duplikatu roli');
+          await role.delete(`SafeIT: usuwanie duplikatu/wariantu roli "${role.name}"`);
           deletedRoles++;
         } catch(e) {
-          log.push(`Nie mozna usunac roli duplikatu: ${sorted[i].name} (${sorted[i].id})`);
+          log.push(`Nie mozna usunac roli: ${role.name} (${role.id})`);
         }
       }
-      log.push(`Rola "${verifiedName}": znaleziono ${verifiedRoles.size} duplikatow, zachowano 1, usunieto ${verifiedRoles.size - 1}`);
-    } else if (verifiedRoles.size === 1) {
-      keepVerified = verifiedRoles.first();
-      log.push(`Rola "${verifiedName}": OK (1 instancja)`);
-    } else {
-      log.push(`Rola "${verifiedName}": BRAK — nie istnieje na serwerze`);
+
+      log.push(`Zachowano: "${keep.name}" (${keep.id}), usunieto ${roles.size - 1} duplikatow`);
+      return keep;
     }
 
-    if (unverifiedRoles.size > 1) {
-      const sorted = [...unverifiedRoles.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-      keepUnverified = sorted[0];
-      for (let i = 1; i < sorted.length; i++) {
-        const membersWithDupe = guild.members.cache.filter(m => m.roles.cache.has(sorted[i].id));
-        for (const [, member] of membersWithDupe) {
-          try {
-            if (!member.roles.cache.has(keepUnverified.id)) {
-              await member.roles.add(keepUnverified, 'SafeIT: migracja z duplikatu roli');
-            }
-          } catch(e) {}
-        }
-        try {
-          await sorted[i].delete('SafeIT: usuwanie duplikatu roli');
-          deletedRoles++;
-        } catch(e) {
-          log.push(`Nie mozna usunac roli duplikatu: ${sorted[i].name} (${sorted[i].id})`);
-        }
-      }
-      log.push(`Rola "${unverifiedName}": znaleziono ${unverifiedRoles.size} duplikatow, zachowano 1, usunieto ${unverifiedRoles.size - 1}`);
-    } else if (unverifiedRoles.size === 1) {
-      keepUnverified = unverifiedRoles.first();
-      log.push(`Rola "${unverifiedName}": OK (1 instancja)`);
-    } else {
-      log.push(`Rola "${unverifiedName}": BRAK — nie istnieje na serwerze`);
-    }
+    keepVerified = await deduplicateRoles(verifiedRoles, verifiedName, verifiedName);
+    keepUnverified = await deduplicateRoles(unverifiedRoles, unverifiedName, unverifiedName);
 
     // =============================================
     // PHASE 2: Audit every member
