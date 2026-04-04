@@ -73,37 +73,19 @@ module.exports = {
         const variants = sorted.map(r => `"${r.name}"`).join(', ');
         log.push(`Rola "${label}": ${roles.size} wariantow: ${variants}`);
 
-        // Fetch members once
-        await guild.members.fetch();
-
         for (const role of sorted) {
           if (role.id === keep.id) continue;
 
-          const membersWithDupe = guild.members.cache.filter(m => m.roles.cache.has(role.id));
-          for (const [, member] of membersWithDupe) {
-            try {
-              if (!member.roles.cache.has(keep.id)) {
-                await member.roles.add(keep, 'SafeIT: migracja na glowna role');
-                await sleep(400); // throttle
-              }
-              // EXPLICITLY remove the duplicate role from the user!
-              if (member.roles.cache.has(role.id)) {
-                await member.roles.remove(role, 'SafeIT: usuniecie duplikatu');
-                fixedMembers++;
-                await sleep(400);
-              }
-            } catch(e) {}
-          }
           try {
-            await role.delete('SafeIT: duplikat');
+            await role.delete('SafeIT: usuniecie zduplikowanej roli');
             deletedRoles++;
             await sleep(500);
           } catch(e) {
-            log.push(`⚠️ Zabrano duplikat graczom, ale usuniecie roli na serwerze odrzucone (brak permisji/hierarchia): ${role.name}`);
+            log.push(`⚠️ Blad usuniecia roli z serwera (brak uprawnien/hierarchia): ${role.name}`);
           }
         }
 
-        log.push(`Zachowano: "${keep.name}", usunieto ${roles.size - 1}`);
+        log.push(`Zachowano: "${keep.name}", usunieto ${roles.size - 1} duplikatow z pamieci Discorda.`);
         return keep;
       }
 
@@ -111,68 +93,19 @@ module.exports = {
       keepUnverified = await deduplicateRoles(unverifiedRoles, unverifiedName, unverifiedName);
 
       // =============================================
-      // PHASE 2: Audit members
-      // =============================================
-      log.push('');
-      log.push('**FAZA 2** — Audyt uzytkownikow');
-
-      await guild.members.fetch();
-
-      let conflictBoth = 0;
-      let noRole = 0;
-      let alreadyClean = 0;
-      let opCount = 0;
-
-      const members = guild.members.cache.filter(m => !m.user.bot);
-
-      for (const [, member] of members) {
-        const hasVerified = keepVerified ? member.roles.cache.has(keepVerified.id) : false;
-        const hasUnverified = keepUnverified ? member.roles.cache.has(keepUnverified.id) : false;
-
-        if (hasVerified && hasUnverified) {
-          try {
-            await member.roles.remove(keepUnverified, 'SafeIT: konflikt');
-            conflictBoth++;
-            fixedMembers++;
-            opCount++;
-            if (opCount % 5 === 0) await sleep(1000); // throttle every 5 ops
-          } catch(e) {}
-          continue;
-        }
-
-        if (!hasVerified && !hasUnverified && keepUnverified) {
-          try {
-            await member.roles.add(keepUnverified, 'SafeIT: brak roli');
-            noRole++;
-            fixedMembers++;
-            opCount++;
-            if (opCount % 5 === 0) await sleep(1000);
-          } catch(e) {}
-          continue;
-        }
-
-        alreadyClean++;
-      }
-
-      log.push(`Konflikt (oba role): ${conflictBoth}`);
-      log.push(`Brak roli: ${noRole}`);
-      log.push(`Poprawni: ${alreadyClean}`);
-
-      // =============================================
       // PHASE 3: Summary
       // =============================================
       const summary = [
-        `Usunieto duplikatow rol: **${deletedRoles}**`,
-        `Naprawionych uzytkownikow: **${fixedMembers}**`,
-        `Przeskanowano: **${members.size}**`,
+        `Usunieto zduplikowanych rol systemowych: **${deletedRoles}**`,
+        `*Ze wzgledu na darmowy hosting Rendera (limit pamieci), bot nie migrowal uzytkownikow recznie by zapobiec OOM Crash (awarii). Discord sam odbierze usuniete role.*`,
       ].join('\n');
 
       const embed = new EmbedBuilder()
-        .setTitle('SafeIT — Raport')
+        .setTitle('SafeIT — Raport Naprawy')
         .setDescription(log.join('\n'))
         .addFields({ name: 'Podsumowanie', value: summary })
-        .setColor(deletedRoles > 0 || fixedMembers > 0 ? 0xFEE75C : 0x57F287)
-        .setFooter({ text: 'NarisMC SafeIT' })
+        .setColor(0x57F287)
+        .setFooter({ text: 'NarisMC SafeIT Fast-Mode' })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
@@ -180,16 +113,14 @@ module.exports = {
     } catch (error) {
       console.error('SafeIT critical error:', error);
       const errorEmbed = new EmbedBuilder()
-        .setTitle('SafeIT — Blad')
-        .setDescription(`Wystapil blad podczas audytu:\n\`\`\`${error.message}\`\`\`\n\nDotychczasowy postep:\n${log.join('\n')}\n\nUsunieto rol: ${deletedRoles}\nNaprawiono: ${fixedMembers}`)
+        .setTitle('SafeIT — Blad Zabezpieczony')
+        .setDescription(`Wystapil krytyczny blad API:\n\`\`\`${error.message}\`\`\`\n\nDotychczas: Usunieto rol: ${deletedRoles}`)
         .setColor(0xED4245)
         .setTimestamp();
 
       try {
         await interaction.editReply({ embeds: [errorEmbed] });
-      } catch(e) {
-        console.error('SafeIT: cannot send error reply:', e.message);
-      }
+      } catch(e) {}
     }
   }
 };
