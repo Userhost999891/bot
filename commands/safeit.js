@@ -41,11 +41,17 @@ module.exports = {
 
       await guild.roles.fetch();
 
-      const verifiedNameLower = verifiedName.toLowerCase();
-      const unverifiedNameLower = unverifiedName.toLowerCase();
-
-      const verifiedRoles = guild.roles.cache.filter(r => r.name.toLowerCase().includes(verifiedNameLower));
-      const unverifiedRoles = guild.roles.cache.filter(r => r.name.toLowerCase().includes(unverifiedNameLower));
+      // Ultra fuzzy match: strip all non-alphanumeric chars and find base word to catch ANY emoji/space variants
+      const normalize = (str) => str.toLowerCase().replace(/[^a-zżółćęśąźń0-9]/gi, '');
+      
+      const verifiedRoles = guild.roles.cache.filter(r => {
+        const norm = normalize(r.name);
+        return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
+      });
+      const unverifiedRoles = guild.roles.cache.filter(r => {
+        const norm = normalize(r.name);
+        return norm.includes('niezweryfikowan');
+      });
 
       let keepVerified = null;
       let keepUnverified = null;
