@@ -77,8 +77,14 @@ module.exports = {
           for (const [, member] of membersWithDupe) {
             try {
               if (!member.roles.cache.has(keep.id)) {
-                await member.roles.add(keep, 'SafeIT: migracja');
-                await sleep(300); // throttle to avoid rate limits
+                await member.roles.add(keep, 'SafeIT: migracja na glowna role');
+                await sleep(400); // throttle
+              }
+              // EXPLICITLY remove the duplicate role from the user!
+              if (member.roles.cache.has(role.id)) {
+                await member.roles.remove(role, 'SafeIT: usuniecie duplikatu');
+                fixedMembers++;
+                await sleep(400);
               }
             } catch(e) {}
           }
@@ -87,7 +93,7 @@ module.exports = {
             deletedRoles++;
             await sleep(500);
           } catch(e) {
-            log.push(`Blad usuwania: ${role.name}`);
+            log.push(`⚠️ Zabrano duplikat graczom, ale usuniecie roli na serwerze odrzucone (brak permisji/hierarchia): ${role.name}`);
           }
         }
 
