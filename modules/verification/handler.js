@@ -13,7 +13,13 @@ async function handleVerification(interaction, guild) {
 
   const member = interaction.member || await guild.members.fetch(interaction.user.id);
 
-  const verifiedRole = guild.roles.cache.find(r => r.name === config.verified_role_name);
+  const normalize = (str) => str.toLowerCase().replace(/[^a-zżółćęśąźń0-9]/gi, '');
+  
+  const verifiedRole = guild.roles.cache.find(r => {
+    const norm = normalize(r.name);
+    return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
+  });
+
   if (!verifiedRole) {
     return interaction.reply({ 
       embeds: [new EmbedBuilder().setDescription('❌〢Rola zweryfikowanego nie istnieje! Skontaktuj się z administratorem.').setColor(0xf04747)], 
@@ -39,12 +45,19 @@ async function assignVerifiedRole(interaction, guild) {
   const member = await guild.members.fetch(interaction.user.id).catch(() => null);
   if (!member) return false;
 
-  const verifiedRole = guild.roles.cache.find(r => r.name === config.verified_role_name);
-  const unverifiedRole = guild.roles.cache.find(r => r.name === config.unverified_role_name);
+  const normalize = (str) => str.toLowerCase().replace(/[^a-zżółćęśąźń0-9]/gi, '');
+  
+  const verifiedRole = guild.roles.cache.find(r => {
+    const norm = normalize(r.name);
+    return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
+  });
+  const unverifiedRole = guild.roles.cache.find(r => {
+    const norm = normalize(r.name);
+    return norm.includes('niezweryfikowan');
+  });
 
   if (!verifiedRole) {
-    await interaction.reply({ content: '❌〢Rola zweryfikowanego nie istnieje! Skontaktuj się z administracją serwera, bo bot nie ma poprawnie ustawionych ról.', ephemeral: true });
-    return false;
+    return false; // Error will be handled by interactionCreate.js
   }
 
   try {
