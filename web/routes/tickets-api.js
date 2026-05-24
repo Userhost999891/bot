@@ -51,13 +51,14 @@ module.exports = function(discordClient) {
 
   // Add ticket category
   router.post('/guild/:id/categories', authMiddleware, async (req, res) => {
-    const { name, emoji, description, discord_category_id, color } = req.body;
+    const { name, emoji, description, discord_category_id, color, requires_mc_nick } = req.body;
     if (!name) return res.status(400).json({ error: 'Nazwa kategorii jest wymagana!' });
 
     const categories = await getTicketCategories(req.params.id);
     await addTicketCategory(req.params.id, {
       name, emoji, description, discord_category_id, color,
-      sort_order: categories.length
+      sort_order: categories.length,
+      requires_mc_nick: !!requires_mc_nick
     });
 
     res.json({ success: true, message: `Kategoria "${name}" dodana!` });
@@ -65,8 +66,11 @@ module.exports = function(discordClient) {
 
   // Update ticket category
   router.put('/guild/:id/categories/:catId', authMiddleware, async (req, res) => {
-    const { name, emoji, description, discord_category_id, color } = req.body;
-    await updateTicketCategory(parseInt(req.params.catId), { name, emoji, description, discord_category_id, color });
+    const { name, emoji, description, discord_category_id, color, requires_mc_nick } = req.body;
+    await updateTicketCategory(parseInt(req.params.catId), { 
+      name, emoji, description, discord_category_id, color, 
+      requires_mc_nick: !!requires_mc_nick 
+    });
     res.json({ success: true, message: 'Kategoria zaktualizowana!' });
   });
 

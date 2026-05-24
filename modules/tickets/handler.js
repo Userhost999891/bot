@@ -15,14 +15,6 @@ const COOLDOWN_MS = 5 * 60 * 1000;
 const MAX_TICKETS_DEFAULT = 50;
 
 /**
- * Check if a category name is MEDIA/TWÓRCA
- */
-function isCategoryMediaTworca(name) {
-  const clean = name.toUpperCase().replace(/\s+/g, '');
-  return clean.includes('TWÓRCA') || clean.includes('TWORCA') || clean.includes('MEDIA');
-}
-
-/**
  * Build and send the ticket panel embed with select menu
  */
 async function sendTicketPanel(channel, guild) {
@@ -41,7 +33,7 @@ async function sendTicketPanel(channel, guild) {
 
   // Encode '_mc' suffix for categories that need a Minecraft nick modal
   const options = categories.map(cat => {
-    const needsMcNick = isCategoryMediaTworca(cat.name);
+    const needsMcNick = !!cat.requires_mc_nick;
     return {
       label: `〢${cat.name}`,
       value: needsMcNick ? `ticket_cat_${cat.id}_mc` : `ticket_cat_${cat.id}`,
@@ -91,12 +83,15 @@ async function handleTicketCreate(interaction) {
     return interaction.showModal(modal);
   }
 
+  // Defer first to prevent timeout
+  await interaction.deferReply({ ephemeral: true });
+
   // For normal categories — do the DB lookup and create ticket
   const categories = await getTicketCategories(interaction.guild.id);
   const category = categories.find(c => c.id === parseInt(categoryId));
 
   if (!category) {
-    return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢Kategoria nie istnieje!' });
   }
 
   await executeTicketCreation(interaction, category, null);
@@ -106,6 +101,9 @@ async function handleTicketCreate(interaction) {
  * Handle ticket modal submission for nickname
  */
 async function handleTicketModalSubmit(interaction) {
+  // Defer modal submit immediately
+  await interaction.deferReply({ ephemeral: true });
+
   const categoryId = interaction.customId.replace('ticket_modal_', '');
   const mcNick = interaction.fields.getTextInputValue('mc_nickname').trim();
 
@@ -113,7 +111,7 @@ async function handleTicketModalSubmit(interaction) {
   const category = categories.find(c => c.id === parseInt(categoryId));
 
   if (!category) {
-    return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢Kategoria nie istnieje!' });
   }
 
   await executeTicketCreation(interaction, category, mcNick);
@@ -133,9 +131,8 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
   const activeCount = await countActiveTickets(guild.id);
 
   if (activeCount >= maxTickets) {
-    return interaction.reply({
-      content: `❌〢Osiągnięto limit ticketów! Aktualnie otwartych: **${activeCount}/${maxTickets}**.\nPoczekaj aż administracja zamknie istniejące tickety.`,
-      ephemeral: true
+    return interaction.editReply({
+      content: `❌〢Osiągnięto limit ticketów! Aktualnie otwartych: **${activeCount}/${maxTickets}**.\nPoczekaj aż administracja zamknie istniejące tickety.`
     });
   }
 
@@ -149,9 +146,8 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
     if (remaining > 0) {
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.ceil((remaining % 60000) / 1000);
-      return interaction.reply({
-        content: `⏳〢Musisz poczekać **${minutes > 0 ? `${minutes} min ` : ''}${seconds} sek** zanim stworzysz kolejny ticket.`,
-        ephemeral: true
+      return interaction.editReply({
+        content: `⏳〢Musisz poczekać **${minutes > 0 ? `${minutes} min ` : ''}${seconds} sek** zanim stworzysz kolejny ticket.`
       });
     }
   }
@@ -159,13 +155,10 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
   // === CHECK: User already has open ticket in this category ===
   const userTickets = await countUserActiveTickets(guild.id, user.id);
   if (userTickets >= 3) {
-    return interaction.reply({
-      content: `❌〢Masz już **${userTickets}** otwarte tickety. Zamknij stare zanim otworzysz nowe.`,
-      ephemeral: true
+    return interaction.editReply({
+      content: `❌〢Masz już **${userTickets}** otwarte tickety. Zamknij stare zanim otworzysz nowe.`
     });
   }
-
-  await interaction.deferReply({ ephemeral: true });
 
   try {
     const ticketNumber = await getNextTicketNumber(guild.id);
@@ -249,8 +242,7 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    const cleanName = category.name.toUpperCase().replace(/\s+/g, '');
-    const isMediaTworca = cleanName.includes('TWÓRCA') || cleanName.includes('TWORCA') || cleanName.includes('MEDIA');
+    const isMediaTworca = !!category.requires_mc_nick;
     const componentsArray = [buttons];
 
     if (isMediaTworca && mcNick) {
@@ -304,9 +296,11 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
  * Handle ticket close button
  */
 async function handleTicketClose(interaction) {
+  await interaction.deferReply();
+
   const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
-    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
 
   const closeEmbed = new EmbedBuilder()
@@ -318,7 +312,7 @@ async function handleTicketClose(interaction) {
     .setColor(0xf04747)
     .setTimestamp();
 
-  await interaction.reply({ embeds: [closeEmbed] });
+  await interaction.editReply({ embeds: [closeEmbed] });
 
   setTimeout(async () => {
     try {
@@ -334,15 +328,16 @@ async function handleTicketClose(interaction) {
  * Handle ticket claim button
  */
 async function handleTicketClaim(interaction) {
+  await interaction.deferReply();
+
   const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
-    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
 
   if (ticket.claimed_by) {
-    return interaction.reply({
-      content: `📋〢Ten ticket jest już odebrany przez <@${ticket.claimed_by}>!`,
-      ephemeral: true
+    return interaction.editReply({
+      content: `📋〢Ten ticket jest już odebrany przez <@${ticket.claimed_by}>!`
     });
   }
 
@@ -353,19 +348,21 @@ async function handleTicketClaim(interaction) {
     .setColor(0x43b581)
     .setTimestamp();
 
-  await interaction.reply({ embeds: [claimEmbed] });
+  await interaction.editReply({ embeds: [claimEmbed] });
 }
 
 /**
  * Handle ticket Set Tworca button (Discord → MC bridge)
  */
 async function handleTicketSetTworca(interaction) {
+  await interaction.deferReply();
+
   const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
-    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
   if (!ticket.mc_nick) {
-    return interaction.reply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!' });
   }
 
   const { addPendingCommand } = require('../../database/db');
@@ -376,10 +373,10 @@ async function handleTicketSetTworca(interaction) {
     const embed = new EmbedBuilder()
       .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **TWÓRCA** dla **${ticket.mc_nick}**.\n\`${command}\``)
       .setColor(0x43b581);
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   } catch (error) {
     console.error('Error adding pending command tworca:', error);
-    await interaction.reply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.', ephemeral: true });
+    await interaction.editReply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.' });
   }
 }
 
@@ -387,12 +384,14 @@ async function handleTicketSetTworca(interaction) {
  * Handle ticket Set Media button (Discord → MC bridge)
  */
 async function handleTicketSetMedia(interaction) {
+  await interaction.deferReply();
+
   const ticket = await getActiveTicket(interaction.channel.id);
   if (!ticket) {
-    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
   if (!ticket.mc_nick) {
-    return interaction.reply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!', ephemeral: true });
+    return interaction.editReply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!' });
   }
 
   const { addPendingCommand } = require('../../database/db');
@@ -403,10 +402,10 @@ async function handleTicketSetMedia(interaction) {
     const embed = new EmbedBuilder()
       .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **MEDIA** dla **${ticket.mc_nick}**.\n\`${command}\``)
       .setColor(0x43b581);
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   } catch (error) {
     console.error('Error adding pending command media:', error);
-    await interaction.reply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.', ephemeral: true });
+    await interaction.editReply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.' });
   }
 }
 

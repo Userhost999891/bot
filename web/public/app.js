@@ -481,10 +481,11 @@ function setupNavigation() {
       cats.forEach(cat => {
         const card = document.createElement('div');
         card.className = 'category-card';
+        const reqNickBadge = cat.requires_mc_nick ? ' <span class="badge" style="background: rgba(88, 101, 242, 0.2); color: #5865F2; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">Minecraft Nick</span>' : '';
         card.innerHTML = `
           <span class="category-emoji">${cat.emoji || '📋'}</span>
           <div class="category-info">
-            <h4><span class="category-color-dot" style="background:${cat.color || '#5865F2'}"></span>${escapeHtml(cat.name)}</h4>
+            <h4><span class="category-color-dot" style="background:${cat.color || '#5865F2'}"></span>${escapeHtml(cat.name)}${reqNickBadge}</h4>
             <p>${escapeHtml(cat.description || 'Brak opisu')}</p>
           </div>
           <div class="category-actions">
@@ -535,6 +536,9 @@ function setupNavigation() {
     $('category-modal').addEventListener('click', (e) => {
       if (e.target === $('category-modal')) closeCategoryModal();
     });
+    $('cat-requires-mc-nick').addEventListener('change', () => {
+      $('cat-requires-mc-nick-label').classList.toggle('checked', $('cat-requires-mc-nick').checked);
+    });
   }
 
   function openAddCategory() {
@@ -546,6 +550,8 @@ function setupNavigation() {
     $('cat-color').value = '#5865F2';
     $('cat-color-hex').textContent = '#5865F2';
     $('cat-color').dispatchEvent(new Event('change'));
+    $('cat-requires-mc-nick').checked = false;
+    $('cat-requires-mc-nick-label').classList.remove('checked');
     $('cat-edit-id').value = '';
     updateCustomSelects();
     $('category-modal').classList.remove('hidden');
@@ -560,6 +566,13 @@ function setupNavigation() {
     $('cat-color').value = cat.color || '#5865F2';
     $('cat-color-hex').textContent = cat.color || '#5865F2';
     $('cat-color').dispatchEvent(new Event('change'));
+    const reqNick = !!cat.requires_mc_nick;
+    $('cat-requires-mc-nick').checked = reqNick;
+    if (reqNick) {
+      $('cat-requires-mc-nick-label').classList.add('checked');
+    } else {
+      $('cat-requires-mc-nick-label').classList.remove('checked');
+    }
     $('cat-edit-id').value = cat.id;
     updateCustomSelects();
     $('category-modal').classList.remove('hidden');
@@ -575,6 +588,7 @@ function setupNavigation() {
     const description = $('cat-description').value.trim();
     const discord_category_id = $('cat-discord-category').value;
     const color = $('cat-color').value;
+    const requires_mc_nick = $('cat-requires-mc-nick').checked;
     const editId = $('cat-edit-id').value;
 
     if (!name) { alert('Wpisz nazwę kategorii!'); return; }
@@ -585,13 +599,13 @@ function setupNavigation() {
         res = await fetch(`/api/tickets/guild/${selectedGuildId}/categories/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, emoji, description, discord_category_id, color })
+          body: JSON.stringify({ name, emoji, description, discord_category_id, color, requires_mc_nick })
         });
       } else {
         res = await fetch(`/api/tickets/guild/${selectedGuildId}/categories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, emoji, description, discord_category_id, color })
+          body: JSON.stringify({ name, emoji, description, discord_category_id, color, requires_mc_nick })
         });
       }
       const data = await res.json();

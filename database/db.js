@@ -116,6 +116,14 @@ async function getPool() {
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
+    try {
+      await pool.execute(`
+        ALTER TABLE ticket_categories ADD COLUMN requires_mc_nick TINYINT(1) DEFAULT 0
+      `);
+      console.log('✅ Migracja: Dodano kolumnę requires_mc_nick do ticket_categories.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
 
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS pending_commands (
@@ -323,8 +331,8 @@ async function getTicketCategories(guildId) {
 async function addTicketCategory(guildId, category) {
   const p = await getPool();
   await p.execute(`
-    INSERT INTO ticket_categories (guild_id, name, emoji, description, discord_category_id, color, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO ticket_categories (guild_id, name, emoji, description, discord_category_id, color, sort_order, requires_mc_nick)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     guildId,
     category.name,
@@ -332,7 +340,8 @@ async function addTicketCategory(guildId, category) {
     category.description || '',
     category.discord_category_id || null,
     category.color || '#5865F2',
-    category.sort_order || 0
+    category.sort_order || 0,
+    category.requires_mc_nick ? 1 : 0
   ]);
 }
 
@@ -345,7 +354,8 @@ async function updateTicketCategory(id, category) {
       description = COALESCE(?, description),
       discord_category_id = COALESCE(?, discord_category_id),
       color = COALESCE(?, color),
-      sort_order = COALESCE(?, sort_order)
+      sort_order = COALESCE(?, sort_order),
+      requires_mc_nick = ?
     WHERE id = ?
   `, [
     category.name || null,
@@ -354,6 +364,7 @@ async function updateTicketCategory(id, category) {
     category.discord_category_id || null,
     category.color || null,
     category.sort_order != null ? category.sort_order : null,
+    category.requires_mc_nick != null ? (category.requires_mc_nick ? 1 : 0) : 0,
     id
   ]);
 }
