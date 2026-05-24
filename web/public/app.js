@@ -388,8 +388,17 @@ function setupNavigation() {
   // =============================
   async function loadTicketsData() {
     showSectionStatus('tick', 'Ładowanie...', 'info');
-    await Promise.all([loadTicketsConfig(), loadTicketCategories(), loadRolesForTickets(), loadDiscordCategories()]);
-    hideSectionStatus('tick');
+    try {
+      await loadTicketCategories();
+      await loadRolesForTickets();
+      await loadDiscordCategories();
+      await loadTicketsConfig();
+      updateCustomSelects();
+    } catch (e) {
+      console.error('Error loading tickets:', e);
+    } finally {
+      hideSectionStatus('tick');
+    }
   }
 
   async function loadTicketsConfig() {
@@ -398,7 +407,7 @@ function setupNavigation() {
       const config = await res.json();
       if (config.ticket_channel_id) $('ticket-channel').value = config.ticket_channel_id;
       if (config.support_role_id) {
-        setTimeout(() => { $('ticket-support-role').value = config.support_role_id; }, 200);
+        $('ticket-support-role').value = config.support_role_id;
       }
     } catch (e) { console.error('Error loading ticket config:', e); }
   }
@@ -536,7 +545,9 @@ function setupNavigation() {
     $('cat-discord-category').value = '';
     $('cat-color').value = '#5865F2';
     $('cat-color-hex').textContent = '#5865F2';
+    $('cat-color').dispatchEvent(new Event('change'));
     $('cat-edit-id').value = '';
+    updateCustomSelects();
     $('category-modal').classList.remove('hidden');
   }
 
@@ -548,7 +559,9 @@ function setupNavigation() {
     $('cat-discord-category').value = cat.discord_category_id || '';
     $('cat-color').value = cat.color || '#5865F2';
     $('cat-color-hex').textContent = cat.color || '#5865F2';
+    $('cat-color').dispatchEvent(new Event('change'));
     $('cat-edit-id').value = cat.id;
+    updateCustomSelects();
     $('category-modal').classList.remove('hidden');
   }
 
@@ -631,8 +644,9 @@ function setupNavigation() {
       if (botAvatar) $('preview-bot-avatar').src = botAvatar;
       if (botName) $('preview-bot-name').textContent = botName;
       updateTimestamp();
+      updateCustomSelects();
     } catch (e) { console.error('Error loading announcements config:', e); }
-    hideSectionStatus('ann');
+    finally { hideSectionStatus('ann'); }
   }
 
   function setupAnnouncementPreview() {
@@ -787,6 +801,7 @@ function setupNavigation() {
     $('rew-server-label').value = '';
     $('rew-edit-id').value = '';
     populateRewardChannelSelect();
+    updateCustomSelects();
     $('reward-server-modal').classList.remove('hidden');
   }
 
@@ -798,6 +813,7 @@ function setupNavigation() {
     $('rew-edit-id').value = srv.id;
     populateRewardChannelSelect();
     $('rew-server-channel').value = srv.channel_id;
+    updateCustomSelects();
     $('reward-server-modal').classList.remove('hidden');
   }
 
@@ -1033,6 +1049,13 @@ function setupNavigation() {
         const v = e.target.value;
         if (/^#[0-9A-F]{6}$/i.test(v)) updateOriginal(v);
       };
+      
+      // Auto sync custom wrapper when color picker input changes programmatically
+      input.addEventListener('change', () => {
+        const val = input.value.toUpperCase();
+        hexInput.value = val;
+        dots.forEach(d => d.classList.toggle('active', d.dataset.color === val));
+      });
     });
   }
 
