@@ -15,6 +15,14 @@ const COOLDOWN_MS = 5 * 60 * 1000;
 const MAX_TICKETS_DEFAULT = 50;
 
 /**
+ * Check if a category name is MEDIA/TWÓRCA
+ */
+function isCategoryMediaTworca(name) {
+  const clean = name.toUpperCase().replace(/\s+/g, '');
+  return clean.includes('TWÓRCA') || clean.includes('TWORCA') || clean.includes('MEDIA');
+}
+
+/**
  * Build and send the ticket panel embed with select menu
  */
 async function sendTicketPanel(channel, guild) {
@@ -31,12 +39,16 @@ async function sendTicketPanel(channel, guild) {
     .setFooter({ text: 'NarisMC • System Ticketów' })
     .setTimestamp();
 
-  const options = categories.map(cat => ({
-    label: `〢${cat.name}`,
-    value: `ticket_cat_${cat.id}`,
-    description: cat.description || `Ticket: ${cat.name}`,
-    emoji: cat.emoji || '📋'
-  }));
+  // Encode '_mc' suffix for categories that need a Minecraft nick modal
+  const options = categories.map(cat => {
+    const needsMcNick = isCategoryMediaTworca(cat.name);
+    return {
+      label: `〢${cat.name}`,
+      value: needsMcNick ? `ticket_cat_${cat.id}_mc` : `ticket_cat_${cat.id}`,
+      description: cat.description || `Ticket: ${cat.name}`,
+      emoji: cat.emoji || '📋'
+    };
+  });
 
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId('ticket_category_select')
@@ -51,28 +63,18 @@ async function sendTicketPanel(channel, guild) {
 
 /**
  * Handle category selection — create ticket channel or show modal
+ * IMPORTANT: showModal MUST be the very first response to the interaction (no await before it)
  */
 async function handleTicketCreate(interaction) {
-  const guild = interaction.guild;
-  const user = interaction.user;
-  const categoryId = interaction.values[0].replace('ticket_cat_', '');
+  const rawValue = interaction.values[0];
+  const needsMcNick = rawValue.endsWith('_mc');
+  const categoryId = rawValue.replace('ticket_cat_', '').replace('_mc', '');
 
-  const categories = await getTicketCategories(guild.id);
-  const category = categories.find(c => c.id === parseInt(categoryId));
-
-  if (!category) {
-    return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
-  }
-
-  // Check if this is the media/creator category (flexible checking for media, twórca, tworca, combinations)
-  const cleanName = category.name.toUpperCase().replace(/\s+/g, '');
-  const isMediaTworca = cleanName.includes('TWÓRCA') || cleanName.includes('TWORCA') || cleanName.includes('MEDIA');
-
-  if (isMediaTworca) {
-    // Show Modal first
+  // If this category requires a MC nick, show modal IMMEDIATELY (zero async before showModal)
+  if (needsMcNick) {
     const modal = new ModalBuilder()
-      .setCustomId(`ticket_modal_${category.id}`)
-      .setTitle(`Wymagany Nick Minecraft`);
+      .setCustomId(`ticket_modal_${categoryId}`)
+      .setTitle('Wymagany Nick Minecraft');
 
     const nickInput = new TextInputBuilder()
       .setCustomId('mc_nickname')
@@ -89,7 +91,14 @@ async function handleTicketCreate(interaction) {
     return interaction.showModal(modal);
   }
 
-  // Create ticket immediately
+  // For normal categories — do the DB lookup and create ticket
+  const categories = await getTicketCategories(interaction.guild.id);
+  const category = categories.find(c => c.id === parseInt(categoryId));
+
+  if (!category) {
+    return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
+  }
+
   await executeTicketCreation(interaction, category, null);
 }
 

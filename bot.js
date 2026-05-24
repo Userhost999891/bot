@@ -1,5 +1,14 @@
 // NarisMC Core Bot — Main Entry Point
 require('dotenv').config();
+
+// Prevent crashes on unhandled rejections and exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(' [Unhandled Rejection] at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err, origin) => {
+  console.error(` [Uncaught Exception] ${err}\n` + `Exception origin: ${origin}`);
+});
+
 const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
