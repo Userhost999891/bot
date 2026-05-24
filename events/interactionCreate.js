@@ -2,7 +2,10 @@
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { getRandomQuestion } = require('../modules/verification/questions');
 const { handleVerification, assignVerifiedRole } = require('../modules/verification/handler');
-const { handleTicketCreate, handleTicketClose, handleTicketClaim } = require('../modules/tickets/handler');
+const {
+  handleTicketCreate, handleTicketModalSubmit, handleTicketClose,
+  handleTicketClaim, handleTicketSetTworca, handleTicketSetMedia
+} = require('../modules/tickets/handler');
 const { activeGames, matchmakingQueue, handleMove, createGame, buildBoardComponents, buildGameEmbed } = require('../modules/tictactoe/handler');
 
 const pendingQuestions = new Map();
@@ -78,6 +81,11 @@ module.exports = {
       }
     }
 
+    // MODAL SUBMIT: Ticket Minecraft nickname
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('ticket_modal_')) {
+      await handleTicketModalSubmit(interaction);
+    }
+
     // SELECT MENU: Ticket category
     if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category_select') {
       await handleTicketCreate(interaction);
@@ -91,6 +99,16 @@ module.exports = {
     // BUTTON: Ticket claim
     if (interaction.isButton() && interaction.customId === 'ticket_claim') {
       await handleTicketClaim(interaction);
+    }
+
+    // BUTTON: Ticket Set Tworca (LuckPerms parent set)
+    if (interaction.isButton() && interaction.customId === 'ticket_set_tworca') {
+      await handleTicketSetTworca(interaction);
+    }
+
+    // BUTTON: Ticket Set Media (LuckPerms parent set)
+    if (interaction.isButton() && interaction.customId === 'ticket_set_media') {
+      await handleTicketSetMedia(interaction);
     }
 
     // =============================

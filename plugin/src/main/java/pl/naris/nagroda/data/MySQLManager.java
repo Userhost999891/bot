@@ -39,6 +39,18 @@ public class MySQLManager {
                         UNIQUE KEY unique_claim (player_name, server_id)
                     )
                 """);
+                stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS pending_commands (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        player_name VARCHAR(16) NOT NULL,
+                        command TEXT NOT NULL,
+                        source VARCHAR(50) DEFAULT 'discord',
+                        guild_id VARCHAR(20),
+                        status ENUM('pending','executed','failed') DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        executed_at TIMESTAMP NULL
+                    )
+                """);
             }
 
             plugin.getLogger().info("MySQL: " + host + ":" + port + "/" + database);
@@ -110,6 +122,61 @@ public class MySQLManager {
         }
     }
 
+    /**
+     * Get all commands with status='pending'
+     */
+    public List<PendingCommand> getPendingCommands() {
+        ensureConnection();
+        List<PendingCommand> commands = new ArrayList<>();
+
+        String sql = "SELECT id, player_name, command FROM pending_commands WHERE status = 'pending'";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                commands.add(new PendingCommand(
+                        rs.getInt("id"),
+                        rs.getString("player_name"),
+                        rs.getString("command")
+                ));
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Błąd pobierania komend: " + e.getMessage());
+        }
+
+        return commands;
+    }
+
+    /**
+     * Mark command as executed and set executed_at timestamp
+     */
+    public void markCommandExecuted(int id) {
+        ensureConnection();
+        String sql = "UPDATE pending_commands SET status = 'executed', executed_at = NOW() WHERE id = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Błąd oznaczania komendy jako wykonanej: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mark command as failed
+     */
+    public void markCommandFailed(int id) {
+        ensureConnection();
+        String sql = "UPDATE pending_commands SET status = 'failed' WHERE id = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Błąd oznaczania komendy jako nieudanej: " + e.getMessage());
+        }
+    }
+
     public void close() {
         try {
             if (connection != null && !connection.isClosed()) {
@@ -130,6 +197,18 @@ public class MySQLManager {
             this.playerName = playerName;
             this.discordId = discordId;
             this.discordTag = discordTag;
+        }
+    }
+
+    public static class PendingCommand {
+        public final int id;
+        public final String playerName;
+        public final String command;
+
+        public PendingCommand(int id, String playerName, String command) {
+            this.id = id;
+            this.playerName = playerName;
+            this.command = command;
         }
     }
 }

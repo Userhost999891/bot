@@ -5,6 +5,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import pl.naris.nagroda.commands.NagrodaCommand;
 import pl.naris.nagroda.data.MySQLManager;
+import pl.naris.nagroda.reward.CommandChecker;
 import pl.naris.nagroda.reward.RewardChecker;
 
 public class NagrodaPlugin extends JavaPlugin {
@@ -16,7 +17,7 @@ public class NagrodaPlugin extends JavaPlugin {
         saveDefaultConfig();
 
         getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        getLogger().info(" NMC-Nagroda v2.0");
+        getLogger().info(" NMC-Nagroda v2.1");
         getLogger().info(" Łączenie z MySQL...");
         getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -37,7 +38,10 @@ public class NagrodaPlugin extends JavaPlugin {
         RewardChecker checker = new RewardChecker(this);
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, checker, 20L * 5, 20L * interval);
 
-        getLogger().info("✅ NMC-Nagroda v2.0 włączony! Sprawdzanie co " + interval + "s");
+        CommandChecker cmdChecker = new CommandChecker(this);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, cmdChecker, 20L * 3, 20L * 5);
+
+        getLogger().info("✅ NMC-Nagroda v2.1 włączony! Sprawdzanie co " + interval + "s");
     }
 
     @Override

@@ -1,7 +1,8 @@
 // Ticket system handler
 const {
   EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
-  ChannelType, PermissionFlagsBits, StringSelectMenuBuilder
+  ChannelType, PermissionFlagsBits, StringSelectMenuBuilder,
+  ModalBuilder, TextInputBuilder, TextInputStyle
 } = require('discord.js');
 const {
   getTicketConfig, getTicketCategories, getNextTicketNumber,
@@ -49,20 +50,73 @@ async function sendTicketPanel(channel, guild) {
 }
 
 /**
- * Handle category selection — create ticket channel
+ * Handle category selection — create ticket channel or show modal
  */
 async function handleTicketCreate(interaction) {
   const guild = interaction.guild;
   const user = interaction.user;
   const categoryId = interaction.values[0].replace('ticket_cat_', '');
 
-  const ticketConfig = await getTicketConfig(guild.id);
   const categories = await getTicketCategories(guild.id);
   const category = categories.find(c => c.id === parseInt(categoryId));
 
   if (!category) {
     return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
   }
+
+  // Check if this is the media/creator category
+  const isMediaTworca = category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWÓRCA' || category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWORCA';
+
+  if (isMediaTworca) {
+    // Show Modal first
+    const modal = new ModalBuilder()
+      .setCustomId(`ticket_modal_${category.id}`)
+      .setTitle(`Wymagany Nick Minecraft`);
+
+    const nickInput = new TextInputBuilder()
+      .setCustomId('mc_nickname')
+      .setLabel('Wpisz swój nick z Minecrafta')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMinLength(3)
+      .setMaxLength(16)
+      .setPlaceholder('np. Steve');
+
+    const row = new ActionRowBuilder().addComponents(nickInput);
+    modal.addComponents(row);
+
+    return interaction.showModal(modal);
+  }
+
+  // Create ticket immediately
+  await executeTicketCreation(interaction, category, null);
+}
+
+/**
+ * Handle ticket modal submission for nickname
+ */
+async function handleTicketModalSubmit(interaction) {
+  const categoryId = interaction.customId.replace('ticket_modal_', '');
+  const mcNick = interaction.fields.getTextInputValue('mc_nickname').trim();
+
+  const categories = await getTicketCategories(interaction.guild.id);
+  const category = categories.find(c => c.id === parseInt(categoryId));
+
+  if (!category) {
+    return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
+  }
+
+  await executeTicketCreation(interaction, category, mcNick);
+}
+
+/**
+ * Execute the actual ticket creation after logic checks
+ */
+async function executeTicketCreation(interaction, category, mcNick = null) {
+  const guild = interaction.guild;
+  const user = interaction.user;
+
+  const ticketConfig = await getTicketConfig(guild.id);
 
   // === CHECK: Max tickets limit ===
   const maxTickets = ticketConfig?.max_tickets || MAX_TICKETS_DEFAULT;
@@ -154,11 +208,11 @@ async function handleTicketCreate(interaction) {
       type: ChannelType.GuildText,
       parent: category.discord_category_id || null,
       permissionOverwrites: permOverwrites,
-      topic: `${category.emoji}〢Ticket od ${user.tag} | Kategoria: ${category.name}`
+      topic: `${category.emoji}〢Ticket od ${user.tag} | Kategoria: ${category.name}${mcNick ? ` | Nick: ${mcNick}` : ''}`
     });
 
     // Save to database
-    await createActiveTicket(guild.id, ticketChannel.id, user.id, category.name, ticketNumber);
+    await createActiveTicket(guild.id, ticketChannel.id, user.id, category.name, ticketNumber, mcNick);
 
     // Build ticket embed inside the channel
     const ticketEmbed = new EmbedBuilder()
@@ -167,6 +221,7 @@ async function handleTicketCreate(interaction) {
         `${interaction.user} Stworzył nowego ${category.emoji}〢**${category.name}** Ticketa.\n\n` +
         `> 🎫〢Ticket #${ticketNumber}\n` +
         `> 📋〢Kategoria: ${category.name}\n` +
+        (mcNick ? `> 👤〢Nick gracza: **${mcNick}**\n` : '') +
         `> ⏰〢Utworzony: <t:${Math.floor(Date.now() / 1000)}:f>`
       )
       .setColor(parseInt(category.color.replace('#', ''), 16) || 0x5865F2)
@@ -184,8 +239,30 @@ async function handleTicketCreate(interaction) {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    await ticketChannel.send({ embeds: [ticketEmbed], components: [buttons] });
-    await ticketChannel.send({ content: `${user} Opisz swój problem poniżej. Administracja wkrótce odpowie.` });
+    const isMediaTworca = category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWÓRCA' || category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWORCA';
+    const componentsArray = [buttons];
+
+    if (isMediaTworca && mcNick) {
+      const mediaButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('ticket_set_tworca')
+          .setLabel('👤〢TWÓRCA')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('ticket_set_media')
+          .setLabel('🎥〢MEDIA')
+          .setStyle(ButtonStyle.Primary)
+      );
+      componentsArray.push(mediaButtons);
+    }
+
+    await ticketChannel.send({ embeds: [ticketEmbed], components: componentsArray });
+    
+    let descriptionText = `${user} Opisz swój problem poniżej. Administracja wkrótce odpowie.`;
+    if (isMediaTworca && mcNick) {
+      descriptionText = `${user} Chcesz otrzymać rangę Twórca lub Media? Nasz system automatycznie zsynchronizuje twoją rangę na serwerze Minecraft z rangą na Discordzie po zweryfikowaniu twoich statystyk i zatwierdzeniu przez administrację.\nAdministracja użyje przycisków na górze aby nadać odpowiednią rangę na serwerze Minecraft.`;
+    }
+    await ticketChannel.send({ content: descriptionText });
 
     // Reply to user — ephemeral with link
     const linkEmbed = new EmbedBuilder()
@@ -204,7 +281,11 @@ async function handleTicketCreate(interaction) {
 
   } catch (error) {
     console.error('Error creating ticket:', error);
-    await interaction.editReply({ content: '❌〢Wystąpił błąd podczas tworzenia ticketa.' });
+    try {
+      await interaction.editReply({ content: '❌〢Wystąpił błąd podczas tworzenia ticketa.' });
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -264,4 +345,66 @@ async function handleTicketClaim(interaction) {
   await interaction.reply({ embeds: [claimEmbed] });
 }
 
-module.exports = { sendTicketPanel, handleTicketCreate, handleTicketClose, handleTicketClaim };
+/**
+ * Handle ticket Set Tworca button (Discord → MC bridge)
+ */
+async function handleTicketSetTworca(interaction) {
+  const ticket = await getActiveTicket(interaction.channel.id);
+  if (!ticket) {
+    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+  }
+  if (!ticket.mc_nick) {
+    return interaction.reply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!', ephemeral: true });
+  }
+
+  const { addPendingCommand } = require('../../database/db');
+  const command = `lp user ${ticket.mc_nick} parent set tworca`;
+  
+  try {
+    await addPendingCommand(ticket.mc_nick, command, interaction.guild.id, 'discord');
+    const embed = new EmbedBuilder()
+      .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **TWÓRCA** dla **${ticket.mc_nick}**.\n\`${command}\``)
+      .setColor(0x43b581);
+    await interaction.reply({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error adding pending command tworca:', error);
+    await interaction.reply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.', ephemeral: true });
+  }
+}
+
+/**
+ * Handle ticket Set Media button (Discord → MC bridge)
+ */
+async function handleTicketSetMedia(interaction) {
+  const ticket = await getActiveTicket(interaction.channel.id);
+  if (!ticket) {
+    return interaction.reply({ content: '❌〢To nie jest kanał ticketa!', ephemeral: true });
+  }
+  if (!ticket.mc_nick) {
+    return interaction.reply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!', ephemeral: true });
+  }
+
+  const { addPendingCommand } = require('../../database/db');
+  const command = `lp user ${ticket.mc_nick} parent set media`;
+
+  try {
+    await addPendingCommand(ticket.mc_nick, command, interaction.guild.id, 'discord');
+    const embed = new EmbedBuilder()
+      .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **MEDIA** dla **${ticket.mc_nick}**.\n\`${command}\``)
+      .setColor(0x43b581);
+    await interaction.reply({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error adding pending command media:', error);
+    await interaction.reply({ content: '❌〢Wystąpił błąd podczas dodawania komendy do kolejki.', ephemeral: true });
+  }
+}
+
+module.exports = {
+  sendTicketPanel,
+  handleTicketCreate,
+  handleTicketModalSubmit,
+  handleTicketClose,
+  handleTicketClaim,
+  handleTicketSetTworca,
+  handleTicketSetMedia
+};

@@ -108,6 +108,27 @@ async function getPool() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    try {
+      await pool.execute(`
+        ALTER TABLE active_tickets ADD COLUMN mc_nick VARCHAR(16) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę mc_nick do active_tickets.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
+
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS pending_commands (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        player_name VARCHAR(16) NOT NULL,
+        command TEXT NOT NULL,
+        source VARCHAR(50) DEFAULT 'discord',
+        guild_id VARCHAR(20),
+        status ENUM('pending','executed','failed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        executed_at TIMESTAMP NULL
+      )
+    `);
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS announcements_config (
         guild_id VARCHAR(20) PRIMARY KEY,
@@ -342,12 +363,12 @@ async function deleteTicketCategory(id) {
   await p.execute('DELETE FROM ticket_categories WHERE id = ?', [id]);
 }
 
-async function createActiveTicket(guildId, channelId, userId, categoryName, ticketNumber) {
+async function createActiveTicket(guildId, channelId, userId, categoryName, ticketNumber, mcNick = null) {
   const p = await getPool();
   await p.execute(`
-    INSERT INTO active_tickets (guild_id, channel_id, user_id, category_name, ticket_number)
-    VALUES (?, ?, ?, ?, ?)
-  `, [guildId, channelId, userId, categoryName, ticketNumber]);
+    INSERT INTO active_tickets (guild_id, channel_id, user_id, category_name, ticket_number, mc_nick)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `, [guildId, channelId, userId, categoryName, ticketNumber, mcNick]);
 }
 
 async function getActiveTicket(channelId) {
@@ -553,6 +574,33 @@ async function markRewardClaimed(playerName, serverId) {
   );
 }
 
+// =====================
+// PENDING COMMANDS (Discord → MC)
+// =====================
+async function addPendingCommand(playerName, command, guildId, source = 'discord') {
+  const p = await getPool();
+  await p.execute(
+    'INSERT INTO pending_commands (player_name, command, source, guild_id) VALUES (?, ?, ?, ?)',
+    [playerName, command, source, guildId]
+  );
+}
+
+async function getPendingCommandsList() {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT * FROM pending_commands WHERE status = "pending" ORDER BY created_at ASC');
+  return rows;
+}
+
+async function markCommandExecuted(id) {
+  const p = await getPool();
+  await p.execute('UPDATE pending_commands SET status = "executed", executed_at = NOW() WHERE id = ?', [id]);
+}
+
+async function markCommandFailed(id) {
+  const p = await getPool();
+  await p.execute('UPDATE pending_commands SET status = "failed", executed_at = NOW() WHERE id = ?', [id]);
+}
+
 module.exports = {
   getPool,
   // Verification
@@ -570,5 +618,7 @@ module.exports = {
   // Rewards
   getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
   getAllRewardChannels, getServerByChannel,
-  hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed
+  hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed,
+  // Pending Commands
+  addPendingCommand, getPendingCommandsList, markCommandExecuted, markCommandFailed
 };

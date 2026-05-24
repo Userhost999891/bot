@@ -150,6 +150,7 @@ function setupNavigation() {
       if (section === 'announcements') loadAnnouncementsData();
       if (section === 'rewards') loadRewardsData();
       if (section === 'tictactoe') loadTTTData();
+      if (section === 'boosttester') loadBoostTesterData();
     }
   }
 
@@ -1036,6 +1037,50 @@ function setupNavigation() {
   }
 
   // =============================
+  // BOOST TESTER
+  // =============================
+  async function loadBoostTesterData() {
+    showSectionStatus('boost', 'Ładowanie...', 'info');
+    try {
+      const res = await fetch(`/api/guild/${selectedGuildId}/channels`);
+      const channels = await res.json();
+      const select = $('boost-channel');
+      select.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+      channels.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.id;
+        opt.textContent = `#${ch.name}`;
+        select.appendChild(opt);
+      });
+      if (typeof updateCustomSelects === 'function') updateCustomSelects();
+    } catch (e) {
+      console.error('Error loading boost tester:', e);
+    }
+    hideSectionStatus('boost');
+  }
+
+  async function sendBoostTest() {
+    const channel_id = $('boost-channel').value;
+    const nick = $('boost-nick').value.trim();
+    if (!channel_id) return showSectionStatus('boost', 'Wybierz kanał!', 'error');
+    if (!nick) return showSectionStatus('boost', 'Wpisz nick gracza!', 'error');
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/guild/${selectedGuildId}/boost-test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_id, nick })
+      });
+      const data = await res.json();
+      showSectionStatus('boost', data.message || data.error, data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('boost', 'Błąd wysyłania', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  // =============================
   // UTILITIES
   // =============================
   function showSectionStatus(prefix, message, type) {
@@ -1088,6 +1133,12 @@ function setupNavigation() {
     $('add-reward-server-btn').addEventListener('click', openAddRewardServer);
     $('rew-modal-save-btn').addEventListener('click', saveRewardServer);
     $('rew-modal-cancel-btn').addEventListener('click', closeRewardServerModal);
+
+    // Boost tester button
+    const sendBoostBtn = $('send-boost-test-btn');
+    if (sendBoostBtn) {
+      sendBoostBtn.addEventListener('click', sendBoostTest);
+    }
 
     // Reward modal overlay close
     const rewModal = $('reward-server-modal');

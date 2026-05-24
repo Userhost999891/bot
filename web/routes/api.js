@@ -452,5 +452,41 @@ module.exports = function(discordClient) {
     }
   });
 
+  // =============================
+  // BOOST TESTER
+  // =============================
+  router.post('/guild/:id/boost-test', authMiddleware, adminParamMiddleware, async (req, res) => {
+    try {
+      const { channel_id, nick } = req.body;
+      if (!channel_id || !nick) return res.status(400).json({ error: 'Kanał i nick są wymagane!' });
+
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Serwer nie znaleziony!' });
+
+      const channel = guild.channels.cache.get(channel_id);
+      if (!channel) return res.status(404).json({ error: 'Kanał nie znaleziony!' });
+
+      const { EmbedBuilder } = require('discord.js');
+      const boostEmbed = new EmbedBuilder()
+        .setTitle('🚀 Nowy Server Boost!')
+        .setDescription(
+          `**${nick}** właśnie zboostawał serwer! 🎉\n\n` +
+          `> 💎 Dziękujemy za wsparcie!\n` +
+          `> ⚡ Serwer zyskuje nowe korzyści!\n\n` +
+          `Poziom boostu: **${guild.premiumTier || 0}** | Boosty: **${(guild.premiumSubscriptionCount || 0) + 1}**`
+        )
+        .setColor(0xf47fff)
+        .setThumbnail(guild.iconURL({ size: 128 }))
+        .setFooter({ text: 'NarisMC • Server Boost [TEST]' })
+        .setTimestamp();
+
+      await channel.send({ embeds: [boostEmbed] });
+      res.json({ success: true, message: `Testowy boost wysłany na #${channel.name}!` });
+    } catch (e) {
+      console.error('Boost test error:', e);
+      res.status(500).json({ error: 'Błąd wysyłania: ' + e.message });
+    }
+  });
+
   return router;
 };
