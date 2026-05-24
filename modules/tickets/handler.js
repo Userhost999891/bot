@@ -64,8 +64,9 @@ async function handleTicketCreate(interaction) {
     return interaction.reply({ content: '❌〢Kategoria nie istnieje!', ephemeral: true });
   }
 
-  // Check if this is the media/creator category
-  const isMediaTworca = category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWÓRCA' || category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWORCA';
+  // Check if this is the media/creator category (flexible checking for media, twórca, tworca, combinations)
+  const cleanName = category.name.toUpperCase().replace(/\s+/g, '');
+  const isMediaTworca = cleanName.includes('TWÓRCA') || cleanName.includes('TWORCA') || cleanName.includes('MEDIA');
 
   if (isMediaTworca) {
     // Show Modal first
@@ -239,7 +240,8 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    const isMediaTworca = category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWÓRCA' || category.name.toUpperCase().replace(/\s+/g, '') === 'MEDIA/TWORCA';
+    const cleanName = category.name.toUpperCase().replace(/\s+/g, '');
+    const isMediaTworca = cleanName.includes('TWÓRCA') || cleanName.includes('TWORCA') || cleanName.includes('MEDIA');
     const componentsArray = [buttons];
 
     if (isMediaTworca && mcNick) {
