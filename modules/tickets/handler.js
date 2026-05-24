@@ -263,7 +263,7 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
     
     let descriptionText = `${user} Opisz swój problem poniżej. Administracja wkrótce odpowie.`;
     if (isMediaTworca && mcNick) {
-      descriptionText = `${user} Chcesz otrzymać rangę Twórca lub Media? Nasz system automatycznie zsynchronizuje Twoją rangę na serwerze Minecraft z rangą na Discordzie po zatwierdzeniu przez administratora.\nAdministrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
+      descriptionText = `${user} Chcesz otrzymać rangę Twórca lub Media? Administrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
     }
     await ticketChannel.send({ content: descriptionText });
 
