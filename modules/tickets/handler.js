@@ -286,7 +286,7 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     
     let descriptionText = `${user} Opisz swój problem poniżej. Administracja wkrótce odpowie.`;
     if (isMediaTworca && mcNick) {
-      descriptionText = `${user} Chcesz otrzymać rangę Twórca lub Media? Administrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
+      descriptionText = `${user} Administrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
     }
     await ticketChannel.send({ content: descriptionText });
 
