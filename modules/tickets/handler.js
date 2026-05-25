@@ -66,19 +66,35 @@ async function handleTicketCreate(interaction) {
   if (needsMcNick) {
     const modal = new ModalBuilder()
       .setCustomId(`ticket_modal_${categoryId}`)
-      .setTitle('Wymagany Nick Minecraft');
+      .setTitle('Weryfikacja Media / Twórca');
 
     const nickInput = new TextInputBuilder()
       .setCustomId('mc_nickname')
-      .setLabel('Wpisz swój nick z Minecrafta')
+      .setLabel('Nick z Minecrafta')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
       .setMinLength(3)
       .setMaxLength(16)
       .setPlaceholder('np. Steve');
 
-    const row = new ActionRowBuilder().addComponents(nickInput);
-    modal.addComponents(row);
+    const socialInput = new TextInputBuilder()
+      .setCustomId('social_link')
+      .setLabel('Link do Twoich social mediów')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder('np. youtube.com/c/nazwa, tiktok.com/@nazwa');
+
+    const screenshotInput = new TextInputBuilder()
+      .setCustomId('screenshot_link')
+      .setLabel('Screen/dowód (np. link do imgura)')
+      .setStyle(TextInputStyle.Paragraph)
+      .setRequired(false)
+      .setPlaceholder('np. https://imgur.com/... lub puste');
+
+    const row1 = new ActionRowBuilder().addComponents(nickInput);
+    const row2 = new ActionRowBuilder().addComponents(socialInput);
+    const row3 = new ActionRowBuilder().addComponents(screenshotInput);
+    modal.addComponents(row1, row2, row3);
 
     return interaction.showModal(modal);
   }
@@ -106,6 +122,11 @@ async function handleTicketModalSubmit(interaction) {
 
   const categoryId = interaction.customId.replace('ticket_modal_', '');
   const mcNick = interaction.fields.getTextInputValue('mc_nickname').trim();
+  
+  let socialLink = null;
+  let screenshotLink = null;
+  try { socialLink = interaction.fields.getTextInputValue('social_link').trim(); } catch(e) {}
+  try { screenshotLink = interaction.fields.getTextInputValue('screenshot_link').trim(); } catch(e) {}
 
   const categories = await getTicketCategories(interaction.guild.id);
   const category = categories.find(c => c.id === parseInt(categoryId));
@@ -114,13 +135,13 @@ async function handleTicketModalSubmit(interaction) {
     return interaction.editReply({ content: '❌〢Kategoria nie istnieje!' });
   }
 
-  await executeTicketCreation(interaction, category, mcNick);
+  await executeTicketCreation(interaction, category, mcNick, socialLink, screenshotLink);
 }
 
 /**
  * Execute the actual ticket creation after logic checks
  */
-async function executeTicketCreation(interaction, category, mcNick = null) {
+async function executeTicketCreation(interaction, category, mcNick = null, socialLink = null, screenshotLink = null) {
   const guild = interaction.guild;
   const user = interaction.user;
 
@@ -225,6 +246,8 @@ async function executeTicketCreation(interaction, category, mcNick = null) {
         `> 🎫〢Ticket #${ticketNumber}\n` +
         `> 📋〢Kategoria: ${category.name}\n` +
         (mcNick ? `> 👤〢Nick gracza: **${mcNick}**\n` : '') +
+        (socialLink ? `> 🌐〢Social media: **${socialLink}**\n` : '') +
+        (screenshotLink ? `> 📸〢Screen/Dowód: **${screenshotLink}**\n` : '') +
         `> ⏰〢Utworzony: <t:${Math.floor(Date.now() / 1000)}:f>`
       )
       .setColor(parseInt(category.color.replace('#', ''), 16) || 0x5865F2)
