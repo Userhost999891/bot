@@ -371,7 +371,7 @@ async function handleTicketSetTworca(interaction) {
   try {
     await addPendingCommand(ticket.mc_nick, command, interaction.guild.id, 'discord');
     const embed = new EmbedBuilder()
-      .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **TWÓRCA** dla **${ticket.mc_nick}**.\n\`${command}\``)
+      .setDescription(`🎉〢Gratulacje! Udało ci się! Ranga **TWÓRCA** została nadana na twój nick **${ticket.mc_nick}**!`)
       .setColor(0x43b581);
     await interaction.editReply({ embeds: [embed] });
   } catch (error) {
@@ -400,7 +400,7 @@ async function handleTicketSetMedia(interaction) {
   try {
     await addPendingCommand(ticket.mc_nick, command, interaction.guild.id, 'discord');
     const embed = new EmbedBuilder()
-      .setDescription(`✅〢Kolejka: Dodano komendę nadania rangi **MEDIA** dla **${ticket.mc_nick}**.\n\`${command}\``)
+      .setDescription(`🎉〢Gratulacje! Udało ci się! Ranga **MEDIA** została nadana na twój nick **${ticket.mc_nick}**!`)
       .setColor(0x43b581);
     await interaction.editReply({ embeds: [embed] });
   } catch (error) {
