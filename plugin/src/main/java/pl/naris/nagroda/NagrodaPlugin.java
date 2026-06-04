@@ -65,15 +65,22 @@ public class NagrodaPlugin extends JavaPlugin {
 
     public void openDiscordRewardGUI(org.bukkit.entity.Player player) {
         pl.naris.nagroda.reward.DiscordRewardGUIHolder holder = new pl.naris.nagroda.reward.DiscordRewardGUIHolder();
-        org.bukkit.inventory.Inventory inventory = Bukkit.createInventory(holder, 27, colorize("&9&l✦ Odbierz Nagrodę Discord ✦"));
+        org.bukkit.inventory.Inventory inventory = Bukkit.createInventory(holder, 27, colorize("&#5865F2&l✦ Odbierz Nagrodę Discord ✦"));
         holder.setInventory(inventory);
 
-        // Panele ozdobne
+        // Panele ozdobne (Dark theme z akcentami blurple)
         org.bukkit.inventory.ItemStack bluePane = new org.bukkit.inventory.ItemStack(org.bukkit.Material.BLUE_STAINED_GLASS_PANE);
-        org.bukkit.inventory.meta.ItemMeta paneMeta = bluePane.getItemMeta();
-        if (paneMeta != null) {
-            paneMeta.setDisplayName(" ");
-            bluePane.setItemMeta(paneMeta);
+        org.bukkit.inventory.meta.ItemMeta blueMeta = bluePane.getItemMeta();
+        if (blueMeta != null) {
+            blueMeta.setDisplayName(" ");
+            bluePane.setItemMeta(blueMeta);
+        }
+
+        org.bukkit.inventory.ItemStack blackPane = new org.bukkit.inventory.ItemStack(org.bukkit.Material.BLACK_STAINED_GLASS_PANE);
+        org.bukkit.inventory.meta.ItemMeta blackMeta = blackPane.getItemMeta();
+        if (blackMeta != null) {
+            blackMeta.setDisplayName(" ");
+            blackPane.setItemMeta(blackMeta);
         }
 
         org.bukkit.inventory.ItemStack grayPane = new org.bukkit.inventory.ItemStack(org.bukkit.Material.GRAY_STAINED_GLASS_PANE);
@@ -83,38 +90,56 @@ public class NagrodaPlugin extends JavaPlugin {
             grayPane.setItemMeta(grayMeta);
         }
 
+        // Układ siatki
         for (int i = 0; i < inventory.getSize(); i++) {
-            if (i == 13) continue;
-            if (i % 2 == 0) {
-                inventory.setItem(i, bluePane);
+            if (i == 13) continue; // Pomiń główkę
+            if (i == 0 || i == 8 || i == 18 || i == 26) {
+                inventory.setItem(i, bluePane); // Rogi: Niebieskie (Blurple)
+            } else if (i < 9 || i > 17 || i == 9 || i == 17) {
+                inventory.setItem(i, blackPane); // Ramka zewnętrzna: Czarna (Dark Mode)
             } else {
-                inventory.setItem(i, grayPane);
+                inventory.setItem(i, grayPane); // Tło wewnątrz: Szare
             }
         }
 
-        // Główka Discord
+        // Główka Discord z base64 przez GameProfile (refleksja dla 100% natychmiastowego działania)
+        String base64 = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWY4NjViYjg4ZjU2Y2UwMTBhOGQ5YWVhYWNlNDRhMmRkY2QzZDYzMTdhZWQ4OTkwYjQxYjRmZmEwMzk4MzZjMyJ9fX0=";
         org.bukkit.inventory.ItemStack discordHead = new org.bukkit.inventory.ItemStack(org.bukkit.Material.PLAYER_HEAD);
         org.bukkit.inventory.meta.SkullMeta skullMeta = (org.bukkit.inventory.meta.SkullMeta) discordHead.getItemMeta();
         if (skullMeta != null) {
-            skullMeta.setDisplayName(colorize("&9&l✦ POŁĄCZ DISCORD ✦"));
+            skullMeta.setDisplayName(colorize("&#5865F2&l✦ POŁĄCZ DISCORD ✦"));
             java.util.List<String> lore = new java.util.ArrayList<>();
             lore.add("");
-            lore.add(colorize("&8» &fKliknij, aby otrzymać link"));
-            lore.add(colorize("&8» &fdo połączenia konta i odebrania nagrody!"));
+            lore.add(colorize("  &fStatus: &c&lNiepołączone"));
+            lore.add(colorize("  &fNagroda: &a&lDarmowe Przedmioty i Ranga"));
             lore.add("");
-            lore.add(colorize("&9Strona www: &bdc.narismc.pl"));
+            lore.add(colorize("  &7Kliknij tutaj, aby otrzymać unikalny"));
+            lore.add(colorize("  &7link na czacie i odebrać nagrodę!"));
             lore.add("");
-            lore.add(colorize("&eKliknij tutaj, aby otrzymać link na czacie!"));
+            lore.add(colorize("  &#5865F2» Kliknij, aby przejść do dc.narismc.pl «"));
             skullMeta.setLore(lore);
 
             try {
-                org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(java.util.UUID.randomUUID());
-                org.bukkit.profile.PlayerTextures textures = profile.getTextures();
-                textures.setSkin(new java.net.URL("http://textures.minecraft.net/texture/5f865bb88f56ce010a8d9aeace44a2ddcd3d6317aed8990b41b4ffa039836c3"));
-                profile.setTextures(textures);
-                skullMeta.setOwnerProfile(profile);
+                Class<?> gameProfileClass = Class.forName("com.mojang.authlib.GameProfile");
+                java.lang.reflect.Constructor<?> gameProfileConstructor = gameProfileClass.getConstructor(java.util.UUID.class, String.class);
+                Object profile = gameProfileConstructor.newInstance(java.util.UUID.randomUUID(), "");
+
+                java.lang.reflect.Method getPropertiesMethod = gameProfileClass.getMethod("getProperties");
+                Object propertiesMap = getPropertiesMethod.invoke(profile);
+
+                java.lang.reflect.Method putMethod = propertiesMap.getClass().getMethod("put", Object.class, Object.class);
+
+                Class<?> propertyClass = Class.forName("com.mojang.authlib.properties.Property");
+                java.lang.reflect.Constructor<?> propertyConstructor = propertyClass.getConstructor(String.class, String.class);
+                Object property = propertyConstructor.newInstance("textures", base64);
+
+                putMethod.invoke(propertiesMap, "textures", property);
+
+                java.lang.reflect.Field profileField = skullMeta.getClass().getDeclaredField("profile");
+                profileField.setAccessible(true);
+                profileField.set(skullMeta, profile);
             } catch (Exception e) {
-                getLogger().warning("Błąd ustawiania profilu główki: " + e.getMessage());
+                getLogger().warning("Błąd ustawiania tekstury główki przez refleksję: " + e.getMessage());
             }
             discordHead.setItemMeta(skullMeta);
         }
@@ -147,6 +172,19 @@ public class NagrodaPlugin extends JavaPlugin {
     }
 
     public String colorize(String message) {
-        return ChatColor.translateAlternateColorCodes('&', message);
+        if (message == null) return null;
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("&#([A-Fa-f0-9]{6})");
+        java.util.regex.Matcher matcher = pattern.matcher(message);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            StringBuilder replacement = new StringBuilder("§x");
+            for (char c : hex.toCharArray()) {
+                replacement.append('§').append(c);
+            }
+            matcher.appendReplacement(sb, replacement.toString());
+        }
+        matcher.appendTail(sb);
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', sb.toString());
     }
 }
