@@ -163,6 +163,15 @@ async function getPool() {
       )
     `);
 
+    try {
+      await pool.execute(`
+        ALTER TABLE reward_servers ADD COLUMN clink VARCHAR(64) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę clink do reward_servers.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
+
     // Ensure utf8mb4 conversion for dynamic discord inputs containing emojis
     const tables = ['guild_config', 'ticket_config', 'announcements_config', 'reward_servers', 'ticket_categories'];
     for (const tableName of tables) {
@@ -523,16 +532,21 @@ async function getRewardServers(guildId) {
   const [rows] = await p.execute('SELECT * FROM reward_servers WHERE guild_id = ? ORDER BY server_name', [guildId]);
   return rows;
 }
-async function addRewardServer(guildId, serverId, serverName, channelId) {
+async function addRewardServer(guildId, serverId, serverName, channelId, clink = null) {
   const p = await getPool();
   await p.execute(
-    'INSERT INTO reward_servers (guild_id, server_id, server_name, channel_id) VALUES (?, ?, ?, ?)',
-    [guildId, serverId, serverName, channelId]
+    'INSERT INTO reward_servers (guild_id, server_id, server_name, channel_id, clink) VALUES (?, ?, ?, ?, ?)',
+    [guildId, serverId, serverName, channelId, clink]
   );
 }
-async function updateRewardServer(id, serverName, channelId) {
+async function updateRewardServer(id, serverName, channelId, clink = null) {
   const p = await getPool();
-  await p.execute('UPDATE reward_servers SET server_name = ?, channel_id = ? WHERE id = ?', [serverName, channelId, id]);
+  await p.execute('UPDATE reward_servers SET server_name = ?, channel_id = ?, clink = ? WHERE id = ?', [serverName, channelId, clink, id]);
+}
+async function getRewardServerByClink(clink) {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT * FROM reward_servers WHERE clink = ?', [clink]);
+  return rows.length > 0 ? rows[0] : null;
 }
 async function deleteRewardServer(id) {
   const p = await getPool();
@@ -627,7 +641,7 @@ module.exports = {
   getTTTStats, updateTTTStats, getTTTLeaderboard,
   getTTTConfig, setTTTConfig,
   // Rewards
-  getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
+  getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer, getRewardServerByClink,
   getAllRewardChannels, getServerByChannel,
   hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed,
   // Pending Commands

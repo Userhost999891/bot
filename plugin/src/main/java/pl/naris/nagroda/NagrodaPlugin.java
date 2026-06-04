@@ -3,6 +3,7 @@ package pl.naris.nagroda;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
+import pl.naris.nagroda.commands.AdminDiscordCommand;
 import pl.naris.nagroda.commands.NagrodaCommand;
 import pl.naris.nagroda.data.MySQLManager;
 import pl.naris.nagroda.reward.CommandChecker;
@@ -33,6 +34,10 @@ public class NagrodaPlugin extends JavaPlugin {
         NagrodaCommand cmd = new NagrodaCommand(this);
         getCommand("nagroda").setExecutor(cmd);
         getCommand("nagroda").setTabCompleter(cmd);
+
+        AdminDiscordCommand adminCmd = new AdminDiscordCommand(this);
+        getCommand("admindiscord").setExecutor(adminCmd);
+        getCommand("admindiscord").setTabCompleter(adminCmd);
 
         int interval = getConfig().getInt("check-interval", 10);
         RewardChecker checker = new RewardChecker(this);

@@ -779,10 +779,11 @@ function setupNavigation() {
         const channelName = rewardChannelsCache.find(c => c.id === srv.channel_id);
         const card = document.createElement('div');
         card.className = 'category-card';
+        const clinkBadge = srv.clink ? ' <span class="badge" style="background: rgba(67, 181, 129, 0.2); color: #43b581; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">🔗 CLINK</span>' : ' <span class="badge" style="background: rgba(240, 71, 71, 0.15); color: #f04747; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">Brak CLINK</span>';
         card.innerHTML = `
           <span class="category-emoji">🖥️</span>
           <div class="category-info">
-            <h4>${escapeHtml(srv.server_name)}</h4>
+            <h4>${escapeHtml(srv.server_name)}${clinkBadge}</h4>
             <p>ID: <code>${escapeHtml(srv.server_id)}</code> • Kanał: #${channelName ? escapeHtml(channelName.name) : srv.channel_id}</p>
           </div>
           <div class="category-actions">
@@ -813,6 +814,7 @@ function setupNavigation() {
     $('rew-server-id').value = '';
     $('rew-server-id').disabled = false;
     $('rew-server-label').value = '';
+    $('rew-server-clink').value = '';
     $('rew-edit-id').value = '';
     populateRewardChannelSelect();
     updateCustomSelects();
@@ -824,6 +826,7 @@ function setupNavigation() {
     $('rew-server-id').value = srv.server_id;
     $('rew-server-id').disabled = true;
     $('rew-server-label').value = srv.server_name;
+    $('rew-server-clink').value = srv.clink || '';
     $('rew-edit-id').value = srv.id;
     populateRewardChannelSelect();
     $('rew-server-channel').value = srv.channel_id;
@@ -839,6 +842,7 @@ function setupNavigation() {
     const server_id = $('rew-server-id').value.trim();
     const server_name = $('rew-server-label').value.trim();
     const channel_id = $('rew-server-channel').value;
+    const clink = $('rew-server-clink').value.trim();
     const editId = $('rew-edit-id').value;
 
     if (!server_id || !server_name || !channel_id) {
@@ -851,13 +855,13 @@ function setupNavigation() {
         res = await fetch(`/api/rewards/guild/${selectedGuildId}/servers/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ server_name, channel_id })
+          body: JSON.stringify({ server_name, channel_id, clink })
         });
       } else {
         res = await fetch(`/api/rewards/guild/${selectedGuildId}/servers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ server_id, server_name, channel_id })
+          body: JSON.stringify({ server_id, server_name, channel_id, clink })
         });
       }
       const data = await res.json();

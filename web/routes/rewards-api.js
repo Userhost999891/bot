@@ -22,7 +22,7 @@ module.exports = function(discordClient) {
   // Add a new reward server
   router.post('/guild/:id/servers', authMiddleware, async (req, res) => {
     try {
-      const { server_id, server_name, channel_id } = req.body;
+      const { server_id, server_name, channel_id, clink } = req.body;
       if (!server_id || !server_name || !channel_id) {
         return res.status(400).json({ error: 'Wypełnij wszystkie pola!' });
       }
@@ -32,7 +32,7 @@ module.exports = function(discordClient) {
         return res.status(400).json({ error: 'ID serwera: małe litery, cyfry, - lub _ (2-32 znaki)' });
       }
 
-      await addRewardServer(req.params.id, server_id, server_name, channel_id);
+      await addRewardServer(req.params.id, server_id, server_name, channel_id, clink || null);
       await refreshChannelCache();
 
       // Setup channel permissions (no history)
@@ -51,10 +51,10 @@ module.exports = function(discordClient) {
   // Update a reward server
   router.put('/guild/:id/servers/:serverId', authMiddleware, async (req, res) => {
     try {
-      const { server_name, channel_id } = req.body;
+      const { server_name, channel_id, clink } = req.body;
       if (!server_name || !channel_id) return res.status(400).json({ error: 'Wypełnij pola!' });
 
-      await updateRewardServer(req.params.serverId, server_name, channel_id);
+      await updateRewardServer(req.params.serverId, server_name, channel_id, clink || null);
       await refreshChannelCache();
 
       const guild = discordClient.guilds.cache.get(req.params.id);

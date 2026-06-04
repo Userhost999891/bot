@@ -11,6 +11,10 @@ commands:
     usage: /nagroda <setup|reload|info>
     permission: nagroda.admin
     aliases: [reward]
+  admindiscord:
+    description: Zarządzanie połączeniem z botem Discord
+    usage: /admindiscord <clink|status>
+    permission: nagroda.admin
 
 permissions:
   nagroda.admin:
