@@ -102,8 +102,7 @@ public class NagrodaPlugin extends JavaPlugin {
             }
         }
 
-        // Główka Discord z base64 przez GameProfile (refleksja dla 100% natychmiastowego działania)
-        String base64 = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWY4NjViYjg4ZjU2Y2UwMTBhOGQ5YWVhYWNlNDRhMmRkY2QzZDYzMTdhZWQ4OTkwYjQxYjRmZmEwMzk4MzZjMyJ9fX0=";
+        // Główka Discord z base64 przez oficjalne API PlayerProfile z zafiksowanym UUID i nazwą dla natychmiastowego buforowania
         org.bukkit.inventory.ItemStack discordHead = new org.bukkit.inventory.ItemStack(org.bukkit.Material.PLAYER_HEAD);
         org.bukkit.inventory.meta.SkullMeta skullMeta = (org.bukkit.inventory.meta.SkullMeta) discordHead.getItemMeta();
         if (skullMeta != null) {
@@ -111,7 +110,7 @@ public class NagrodaPlugin extends JavaPlugin {
             java.util.List<String> lore = new java.util.ArrayList<>();
             lore.add("");
             lore.add(colorize("  &fStatus: &c&lNiepołączone"));
-            lore.add(colorize("  &fNagroda: &a&lDarmowe Przedmioty i Ranga"));
+            lore.add(colorize("  &fNagroda: &#5865F2&lDarmowe Przedmioty"));
             lore.add("");
             lore.add(colorize("  &7Kliknij tutaj, aby otrzymać unikalny"));
             lore.add(colorize("  &7link na czacie i odebrać nagrodę!"));
@@ -120,26 +119,14 @@ public class NagrodaPlugin extends JavaPlugin {
             skullMeta.setLore(lore);
 
             try {
-                Class<?> gameProfileClass = Class.forName("com.mojang.authlib.GameProfile");
-                java.lang.reflect.Constructor<?> gameProfileConstructor = gameProfileClass.getConstructor(java.util.UUID.class, String.class);
-                Object profile = gameProfileConstructor.newInstance(java.util.UUID.randomUUID(), "");
-
-                java.lang.reflect.Method getPropertiesMethod = gameProfileClass.getMethod("getProperties");
-                Object propertiesMap = getPropertiesMethod.invoke(profile);
-
-                java.lang.reflect.Method putMethod = propertiesMap.getClass().getMethod("put", Object.class, Object.class);
-
-                Class<?> propertyClass = Class.forName("com.mojang.authlib.properties.Property");
-                java.lang.reflect.Constructor<?> propertyConstructor = propertyClass.getConstructor(String.class, String.class);
-                Object property = propertyConstructor.newInstance("textures", base64);
-
-                putMethod.invoke(propertiesMap, "textures", property);
-
-                java.lang.reflect.Field profileField = skullMeta.getClass().getDeclaredField("profile");
-                profileField.setAccessible(true);
-                profileField.set(skullMeta, profile);
+                java.util.UUID profileId = java.util.UUID.fromString("5f865bb8-8f56-ce01-0a8d-9aeace44a2dd");
+                org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(profileId, "Discord");
+                org.bukkit.profile.PlayerTextures textures = profile.getTextures();
+                textures.setSkin(new java.net.URL("http://textures.minecraft.net/texture/5f865bb88f56ce010a8d9aeace44a2ddcd3d6317aed8990b41b4ffa039836c3"));
+                profile.setTextures(textures);
+                skullMeta.setOwnerProfile(profile);
             } catch (Exception e) {
-                getLogger().warning("Błąd ustawiania tekstury główki przez refleksję: " + e.getMessage());
+                getLogger().warning("Błąd ustawiania profilu główki: " + e.getMessage());
             }
             discordHead.setItemMeta(skullMeta);
         }
