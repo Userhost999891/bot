@@ -44,15 +44,38 @@ public class RewardChecker implements Runnable {
 
     private void giveReward(Player player) {
         List<String> rewards = plugin.getConfig().getStringList("rewards");
-        if (rewards.isEmpty()) {
-            plugin.getLogger().warning("Lista nagród jest pusta w config.yml!");
+        List<?> items = plugin.getConfig().getList("reward-items");
+
+        boolean hasRewards = (rewards != null && !rewards.isEmpty());
+        boolean hasItems = (items != null && !items.isEmpty());
+
+        if (!hasRewards && !hasItems) {
+            plugin.getLogger().warning("Brak skonfigurowanych nagród (komend i przedmiotów) w config.yml!");
             return;
         }
 
-        for (String command : rewards) {
-            String finalCommand = command.replace("%player%", player.getName());
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCommand);
-            plugin.getLogger().info("[" + plugin.getConfig().getString("server-id") + "] Wykonano: " + finalCommand);
+        // Wykonanie komend
+        if (hasRewards) {
+            for (String command : rewards) {
+                String finalCommand = command.replace("%player%", player.getName());
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCommand);
+                plugin.getLogger().info("[" + plugin.getConfig().getString("server-id") + "] Wykonano: " + finalCommand);
+            }
+        }
+
+        // Rozdanie przedmiotów
+        if (hasItems) {
+            for (Object obj : items) {
+                if (obj instanceof org.bukkit.inventory.ItemStack) {
+                    org.bukkit.inventory.ItemStack item = ((org.bukkit.inventory.ItemStack) obj).clone();
+                    java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> remaining = player.getInventory().addItem(item);
+                    if (!remaining.isEmpty()) {
+                        for (org.bukkit.inventory.ItemStack rem : remaining.values()) {
+                            player.getWorld().dropItemNaturally(player.getLocation(), rem);
+                        }
+                    }
+                }
+            }
         }
 
         String message = plugin.getConfig().getString("messages.reward-given",

@@ -2,6 +2,9 @@ pl\naris\nagroda\data\MySQLManager$PendingCommand.class
 pl\naris\nagroda\data\MySQLManager$PendingReward.class
 pl\naris\nagroda\data\MySQLManager.class
 pl\naris\nagroda\reward\RewardChecker.class
+pl\naris\nagroda\commands\AdminDiscordCommand.class
 pl\naris\nagroda\commands\NagrodaCommand.class
 pl\naris\nagroda\reward\CommandChecker.class
+pl\naris\nagroda\reward\RewardSetupHolder.class
+pl\naris\nagroda\reward\RewardSetupListener.class
 pl\naris\nagroda\NagrodaPlugin.class

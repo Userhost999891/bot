@@ -111,6 +111,14 @@ public class NagrodaCommand implements CommandExecutor, TabCompleter {
                 }
             }
 
+            case "setupreward" -> {
+                if (!(sender instanceof org.bukkit.entity.Player)) {
+                    sender.sendMessage(ChatColor.RED + "Ta komenda może być użyta tylko przez gracza w grze!");
+                    return true;
+                }
+                plugin.openRewardSetup((org.bukkit.entity.Player) sender);
+            }
+
             default -> sendHelp(sender);
         }
 
@@ -120,9 +128,10 @@ public class NagrodaCommand implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         sender.sendMessage("");
         sender.sendMessage(ChatColor.GOLD + "━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        sender.sendMessage(ChatColor.AQUA + " NMC-Nagroda v2.0 — Pomoc");
+        sender.sendMessage(ChatColor.AQUA + " NMC-Nagroda v2.1 — Pomoc");
         sender.sendMessage("");
         sender.sendMessage(ChatColor.YELLOW + " /nagroda setup <komendy>" + ChatColor.GRAY + " — Ustaw nagrody");
+        sender.sendMessage(ChatColor.YELLOW + " /nagroda setupreward" + ChatColor.GRAY + " — Ustaw przedmioty nagrody");
         sender.sendMessage(ChatColor.YELLOW + " /nagroda info" + ChatColor.GRAY + " — Pokaż ustawienia");
         sender.sendMessage(ChatColor.YELLOW + " /nagroda reload" + ChatColor.GRAY + " — Przeładuj config");
         sender.sendMessage(ChatColor.GOLD + "━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -136,7 +145,7 @@ public class NagrodaCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("nagroda.admin")) return completions;
 
         if (args.length == 1) {
-            List<String> subs = Arrays.asList("setup", "reload", "info");
+            List<String> subs = Arrays.asList("setup", "reload", "info", "setupreward");
             return subs.stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());

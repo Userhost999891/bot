@@ -8,9 +8,13 @@ description: Plugin nagród za weryfikację Discord i wykonywanie komend z Disco
 commands:
   nagroda:
     description: Zarządzanie pluginem nagród
-    usage: /nagroda <setup|reload|info>
+    usage: /nagroda <setup|setupreward|reload|info>
     permission: nagroda.admin
     aliases: [reward]
+  admindiscord:
+    description: Zarządzanie połączeniem z botem Discord
+    usage: /admindiscord <clink|status|setupreward>
+    permission: nagroda.admin
 
 permissions:
   nagroda.admin:

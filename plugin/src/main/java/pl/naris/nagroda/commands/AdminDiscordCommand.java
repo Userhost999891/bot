@@ -98,6 +98,14 @@ public class AdminDiscordCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("");
             }
 
+            case "setupreward" -> {
+                if (!(sender instanceof org.bukkit.entity.Player)) {
+                    sender.sendMessage(ChatColor.RED + "Ta komenda może być użyta tylko przez gracza w grze!");
+                    return true;
+                }
+                plugin.openRewardSetup((org.bukkit.entity.Player) sender);
+            }
+
             default -> sendHelp(sender);
         }
 
@@ -111,6 +119,7 @@ public class AdminDiscordCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("");
         sender.sendMessage(ChatColor.YELLOW + " /admindiscord clink" + ChatColor.GRAY + " — Pokaż/Generuj CLINK");
         sender.sendMessage(ChatColor.YELLOW + " /admindiscord clink new" + ChatColor.GRAY + " — Generuj nowy CLINK");
+        sender.sendMessage(ChatColor.YELLOW + " /admindiscord setupreward" + ChatColor.GRAY + " — Ustaw przedmioty nagrody");
         sender.sendMessage(ChatColor.YELLOW + " /admindiscord status" + ChatColor.GRAY + " — Status połączenia");
         sender.sendMessage(ChatColor.GOLD + "━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         sender.sendMessage("");
@@ -123,7 +132,7 @@ public class AdminDiscordCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("nagroda.admin")) return completions;
 
         if (args.length == 1) {
-            List<String> subs = Arrays.asList("clink", "status");
+            List<String> subs = Arrays.asList("clink", "status", "setupreward");
             return subs.stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());

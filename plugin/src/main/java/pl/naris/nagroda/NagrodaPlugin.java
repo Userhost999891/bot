@@ -39,6 +39,8 @@ public class NagrodaPlugin extends JavaPlugin {
         getCommand("admindiscord").setExecutor(adminCmd);
         getCommand("admindiscord").setTabCompleter(adminCmd);
 
+        Bukkit.getPluginManager().registerEvents(new pl.naris.nagroda.reward.RewardSetupListener(this), this);
+
         int interval = getConfig().getInt("check-interval", 10);
         RewardChecker checker = new RewardChecker(this);
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, checker, 20L * 5, 20L * interval);
@@ -56,6 +58,24 @@ public class NagrodaPlugin extends JavaPlugin {
     }
 
     public MySQLManager getMysqlManager() { return mysqlManager; }
+
+    public void openRewardSetup(org.bukkit.entity.Player player) {
+        pl.naris.nagroda.reward.RewardSetupHolder holder = new pl.naris.nagroda.reward.RewardSetupHolder();
+        org.bukkit.inventory.Inventory inventory = Bukkit.createInventory(holder, 27, colorize("&9✦ Ustaw nagrodę (Przedmioty)"));
+        holder.setInventory(inventory);
+
+        java.util.List<?> list = getConfig().getList("reward-items");
+        if (list != null) {
+            int slot = 0;
+            for (Object obj : list) {
+                if (obj instanceof org.bukkit.inventory.ItemStack && slot < inventory.getSize()) {
+                    inventory.setItem(slot++, (org.bukkit.inventory.ItemStack) obj);
+                }
+            }
+        }
+
+        player.openInventory(inventory);
+    }
 
     public void reload() {
         reloadConfig();
