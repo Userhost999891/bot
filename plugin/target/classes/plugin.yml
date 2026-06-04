@@ -15,6 +15,9 @@ commands:
     description: Zarządzanie połączeniem z botem Discord
     usage: /admindiscord <clink|status|setupreward>
     permission: nagroda.admin
+  discord:
+    description: Odbierz darmową nagrodę Discord
+    usage: /discord
 
 permissions:
   nagroda.admin:

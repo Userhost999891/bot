@@ -2,7 +2,9 @@ C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\NagrodaPlugin
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\commands\AdminDiscordCommand.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\RewardSetupHolder.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\CommandChecker.java
+C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\DiscordRewardGUIHolder.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\data\MySQLManager.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\commands\NagrodaCommand.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\RewardChecker.java
 C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\RewardSetupListener.java
+C:\Users\Aleks\NarisMC x BOT\plugin\src\main\java\pl\naris\nagroda\reward\DiscordRewardGUIListener.java

@@ -26,13 +26,21 @@ public class NagrodaCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
                              @NotNull String[] args) {
 
-        if (!sender.hasPermission("nagroda.admin")) {
-            sender.sendMessage(ChatColor.RED + "Nie masz uprawnień do tej komendy!");
+        if (args.length == 0) {
+            if (sender instanceof org.bukkit.entity.Player) {
+                plugin.openDiscordRewardGUI((org.bukkit.entity.Player) sender);
+            } else {
+                sender.sendMessage(ChatColor.RED + "Konsola nie może otworzyć tego GUI! Użyj podkomendy (np. /nagroda info).");
+            }
             return true;
         }
 
-        if (args.length == 0) {
-            sendHelp(sender);
+        if (!sender.hasPermission("nagroda.admin")) {
+            if (sender instanceof org.bukkit.entity.Player) {
+                plugin.openDiscordRewardGUI((org.bukkit.entity.Player) sender);
+            } else {
+                sender.sendMessage(ChatColor.RED + "Nie masz uprawnień do tej komendy!");
+            }
             return true;
         }
 

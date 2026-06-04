@@ -35,11 +35,15 @@ public class NagrodaPlugin extends JavaPlugin {
         getCommand("nagroda").setExecutor(cmd);
         getCommand("nagroda").setTabCompleter(cmd);
 
+        getCommand("discord").setExecutor(cmd);
+        getCommand("discord").setTabCompleter(cmd);
+
         AdminDiscordCommand adminCmd = new AdminDiscordCommand(this);
         getCommand("admindiscord").setExecutor(adminCmd);
         getCommand("admindiscord").setTabCompleter(adminCmd);
 
         Bukkit.getPluginManager().registerEvents(new pl.naris.nagroda.reward.RewardSetupListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new pl.naris.nagroda.reward.DiscordRewardGUIListener(this), this);
 
         int interval = getConfig().getInt("check-interval", 10);
         RewardChecker checker = new RewardChecker(this);
@@ -58,6 +62,66 @@ public class NagrodaPlugin extends JavaPlugin {
     }
 
     public MySQLManager getMysqlManager() { return mysqlManager; }
+
+    public void openDiscordRewardGUI(org.bukkit.entity.Player player) {
+        pl.naris.nagroda.reward.DiscordRewardGUIHolder holder = new pl.naris.nagroda.reward.DiscordRewardGUIHolder();
+        org.bukkit.inventory.Inventory inventory = Bukkit.createInventory(holder, 27, colorize("&9&l✦ Odbierz Nagrodę Discord ✦"));
+        holder.setInventory(inventory);
+
+        // Panele ozdobne
+        org.bukkit.inventory.ItemStack bluePane = new org.bukkit.inventory.ItemStack(org.bukkit.Material.BLUE_STAINED_GLASS_PANE);
+        org.bukkit.inventory.meta.ItemMeta paneMeta = bluePane.getItemMeta();
+        if (paneMeta != null) {
+            paneMeta.setDisplayName(" ");
+            bluePane.setItemMeta(paneMeta);
+        }
+
+        org.bukkit.inventory.ItemStack grayPane = new org.bukkit.inventory.ItemStack(org.bukkit.Material.GRAY_STAINED_GLASS_PANE);
+        org.bukkit.inventory.meta.ItemMeta grayMeta = grayPane.getItemMeta();
+        if (grayMeta != null) {
+            grayMeta.setDisplayName(" ");
+            grayPane.setItemMeta(grayMeta);
+        }
+
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (i == 13) continue;
+            if (i % 2 == 0) {
+                inventory.setItem(i, bluePane);
+            } else {
+                inventory.setItem(i, grayPane);
+            }
+        }
+
+        // Główka Discord
+        org.bukkit.inventory.ItemStack discordHead = new org.bukkit.inventory.ItemStack(org.bukkit.Material.PLAYER_HEAD);
+        org.bukkit.inventory.meta.SkullMeta skullMeta = (org.bukkit.inventory.meta.SkullMeta) discordHead.getItemMeta();
+        if (skullMeta != null) {
+            skullMeta.setDisplayName(colorize("&9&l✦ POŁĄCZ DISCORD ✦"));
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("");
+            lore.add(colorize("&8» &fKliknij, aby otrzymać link"));
+            lore.add(colorize("&8» &fdo połączenia konta i odebrania nagrody!"));
+            lore.add("");
+            lore.add(colorize("&9Strona www: &bdc.narismc.pl"));
+            lore.add("");
+            lore.add(colorize("&eKliknij tutaj, aby otrzymać link na czacie!"));
+            skullMeta.setLore(lore);
+
+            try {
+                org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(java.util.UUID.randomUUID());
+                org.bukkit.profile.PlayerTextures textures = profile.getTextures();
+                textures.setSkin(new java.net.URL("http://textures.minecraft.net/texture/5f865bb88f56ce010a8d9aeace44a2ddcd3d6317aed8990b41b4ffa039836c3"));
+                profile.setTextures(textures);
+                skullMeta.setOwnerProfile(profile);
+            } catch (Exception e) {
+                getLogger().warning("Błąd ustawiania profilu główki: " + e.getMessage());
+            }
+            discordHead.setItemMeta(skullMeta);
+        }
+
+        inventory.setItem(13, discordHead);
+        player.openInventory(inventory);
+    }
 
     public void openRewardSetup(org.bukkit.entity.Player player) {
         pl.naris.nagroda.reward.RewardSetupHolder holder = new pl.naris.nagroda.reward.RewardSetupHolder();
