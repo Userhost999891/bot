@@ -8,6 +8,7 @@
   let botAvatar = '';
   let botName = 'NarisMC Bot';
   let cachedChannels = [];
+  let cachedRoles = [];
 
   const $ = id => document.getElementById(id);
 
@@ -323,6 +324,18 @@ function setupNavigation() {
 
     } catch (e) {
       console.error('Error loading channels:', e);
+    }
+  }
+
+  async function loadRoles() {
+    try {
+      const res = await fetch(`/api/guild/${selectedGuildId}/roles`);
+      const roles = await res.json();
+      if (Array.isArray(roles)) {
+        cachedRoles = roles;
+      }
+    } catch (e) {
+      console.error('Error fetching roles:', e);
     }
   }
 
@@ -683,7 +696,7 @@ function setupNavigation() {
   async function loadAnnouncementsData() {
     showSectionStatus('ann', 'Ładowanie...', 'info');
     try {
-      await loadChannels();
+      await Promise.all([loadChannels(), loadRoles()]);
 
       const res = await fetch(`/api/announcements/guild/${selectedGuildId}/config`);
       const config = await res.json();
@@ -1232,10 +1245,51 @@ function setupNavigation() {
     });
 
     function showAutocompleteMenu() {
-      const filtered = cachedChannels.filter(ch => 
-        ch.name.toLowerCase().includes(currentQuery) || 
-        ch.category.toLowerCase().includes(currentQuery)
-      ).slice(0, 5); // Limit 5 dla estetyki
+      const trigger = textBeforeCaret.charAt(queryStartIndex);
+      let filtered = [];
+
+      if (trigger === '@') {
+        // Rangi specjalne
+        const specialRoles = [
+          { id: 'everyone', name: '@everyone', category: 'Wszyscy', type: 'special' },
+          { id: 'here', name: '@here', category: 'Aktywni', type: 'special' }
+        ].filter(r => r.name.toLowerCase().includes(currentQuery));
+
+        // Rangi z Discorda
+        const matchedRoles = cachedRoles.filter(r => 
+          r.name.toLowerCase().includes(currentQuery)
+        ).map(r => ({
+          id: r.id,
+          name: `@${r.name}`,
+          category: 'Rola',
+          type: 'role',
+          color: r.color
+        }));
+
+        // Kanały
+        const matchedChannels = cachedChannels.filter(ch => 
+          ch.name.toLowerCase().includes(currentQuery) || 
+          ch.category.toLowerCase().includes(currentQuery)
+        ).map(ch => ({
+          id: ch.id,
+          name: `#${ch.name}`,
+          category: `Kanał (${ch.category})`,
+          type: 'channel'
+        }));
+
+        filtered = [...specialRoles, ...matchedRoles, ...matchedChannels].slice(0, 8);
+      } else if (trigger === '#') {
+        // Tylko kanały
+        filtered = cachedChannels.filter(ch => 
+          ch.name.toLowerCase().includes(currentQuery) || 
+          ch.category.toLowerCase().includes(currentQuery)
+        ).map(ch => ({
+          id: ch.id,
+          name: `#${ch.name}`,
+          category: ch.category,
+          type: 'channel'
+        })).slice(0, 5);
+      }
 
       if (filtered.length === 0) {
         hideAutocompleteMenu();
@@ -1245,19 +1299,33 @@ function setupNavigation() {
       menu.innerHTML = '';
       activeIndex = -1;
 
-      filtered.forEach((ch, idx) => {
+      filtered.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
+        
+        let styleStr = '';
+        if (item.type === 'role' && item.color && item.color !== '#000000') {
+          styleStr = `style="color: ${item.color}; font-weight: 500;"`;
+        }
+
         div.innerHTML = `
-          <span>#${escapeHtml(ch.name)}</span>
-          <span class="channel-category">${escapeHtml(ch.category)}</span>
+          <span ${styleStr}>${escapeHtml(item.name)}</span>
+          <span class="channel-category">${escapeHtml(item.category)}</span>
         `;
         div.addEventListener('click', () => {
           const text = textarea.value;
           const caretPos = textarea.selectionStart;
           const before = text.slice(0, queryStartIndex);
           const after = text.slice(caretPos);
-          const mention = `<#${ch.id}>`;
+          
+          let mention = '';
+          if (item.type === 'channel') {
+            mention = `<#${item.id}>`;
+          } else if (item.type === 'role') {
+            mention = `<@&${item.id}>`;
+          } else if (item.type === 'special') {
+            mention = item.name;
+          }
           
           textarea.value = before + mention + after;
           textarea.focus();
