@@ -1245,7 +1245,7 @@ function setupNavigation() {
     });
 
     function showAutocompleteMenu() {
-      const trigger = textBeforeCaret.charAt(queryStartIndex);
+      const trigger = textarea.value.charAt(queryStartIndex);
       let filtered = [];
 
       if (trigger === '@') {
