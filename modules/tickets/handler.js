@@ -291,9 +291,9 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
 
     await ticketChannel.send({ embeds: [ticketEmbed], components: componentsArray });
     
-    let descriptionText = `${user} Opisz swój problem poniżej. Administracja wkrótce odpowie.`;
+    let descriptionText = `Opisz swój problem poniżej. Administracja wkrótce odpowie.`;
     if (isMediaTworca && mcNick) {
-      descriptionText = `${user} Administrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
+      descriptionText = `Administrator zweryfikuje Twoje zgłoszenie i zdecyduje, jaką rangę otrzymasz (Twórca lub Media).`;
     }
     await ticketChannel.send({ content: descriptionText });
 

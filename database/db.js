@@ -62,9 +62,18 @@ async function getPool() {
         verified_role_name VARCHAR(100) DEFAULT 'Zweryfikowany',
         unverified_role_name VARCHAR(100) DEFAULT 'Niezweryfikowany',
         visible_channels TEXT,
-        verification_message_id VARCHAR(20)
+        verification_message_id VARCHAR(20),
+        boost_channel_id VARCHAR(20)
       )
     `);
+    try {
+      await pool.execute(`
+        ALTER TABLE guild_config ADD COLUMN boost_channel_id VARCHAR(20) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę boost_channel_id do guild_config.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS saved_roles (
         guild_id VARCHAR(20),
@@ -220,33 +229,37 @@ async function setConfig(guildId, config) {
   const channelsStr = config.visible_channels ? JSON.stringify(config.visible_channels) : '[]';
 
   if (existing) {
+    const boostChannel = config.boost_channel_id !== undefined ? (config.boost_channel_id || null) : existing.boost_channel_id;
     await p.execute(`
       UPDATE guild_config SET
         verification_channel_id = COALESCE(?, verification_channel_id),
         verified_role_name = COALESCE(?, verified_role_name),
         unverified_role_name = COALESCE(?, unverified_role_name),
         visible_channels = COALESCE(?, visible_channels),
-        verification_message_id = COALESCE(?, verification_message_id)
+        verification_message_id = COALESCE(?, verification_message_id),
+        boost_channel_id = ?
       WHERE guild_id = ?
     `, [
       config.verification_channel_id || null,
       config.verified_role_name || null,
       config.unverified_role_name || null,
-      channelsStr,
+      config.visible_channels ? channelsStr : null,
       config.verification_message_id || null,
+      boostChannel,
       guildId
     ]);
   } else {
     await p.execute(`
-      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, visible_channels, verification_message_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, visible_channels, verification_message_id, boost_channel_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
       guildId,
       config.verification_channel_id || null,
       config.verified_role_name || 'Zweryfikowany',
       config.unverified_role_name || 'Niezweryfikowany',
       channelsStr,
-      config.verification_message_id || null
+      config.verification_message_id || null,
+      config.boost_channel_id || null
     ]);
   }
 }

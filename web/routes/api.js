@@ -144,20 +144,22 @@ module.exports = function(discordClient) {
       verification_channel_id: null,
       verified_role_name: 'Zweryfikowany',
       unverified_role_name: 'Niezweryfikowany',
-      visible_channels: []
+      visible_channels: [],
+      boost_channel_id: null
     });
   });
 
   // Save verification config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     try {
-      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels } = req.body;
+      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels, boost_channel_id } = req.body;
 
       await setConfig(req.params.id, {
         verification_channel_id,
         verified_role_name,
         unverified_role_name,
-        visible_channels: visible_channels || []
+        visible_channels: visible_channels || [],
+        boost_channel_id: boost_channel_id || null
       });
 
       res.json({ success: true, message: 'Konfiguracja zapisana!' });
@@ -468,19 +470,19 @@ module.exports = function(discordClient) {
 
       const { EmbedBuilder } = require('discord.js');
       const boostEmbed = new EmbedBuilder()
-        .setTitle('🚀 Nowy Server Boost!')
+        .setTitle('✨ NOWY SERVER BOOST! [TEST] ✨')
         .setDescription(
-          `**${nick}** właśnie zboostawał serwer! 🎉\n\n` +
-          `> 💎 Dziękujemy za wsparcie!\n` +
-          `> ⚡ Serwer zyskuje nowe korzyści!\n\n` +
-          `Poziom boostu: **${guild.premiumTier || 0}** | Boosty: **${(guild.premiumSubscriptionCount || 0) + 1}**`
+          `💜 Użytkownik **${nick}** właśnie ulepszył nasz serwer!\n\n` +
+          `> **Dziękujemy bardzo za wsparcie serwera!** 🥰\n` +
+          `> Nagrody za ulepszenie odbierzesz na kanale z nagrodami!\n\n` +
+          `• 🔮 Aktualnie na serwerze jest: **${(guild.premiumSubscriptionCount || 0) + 1}** ulepszeń`
         )
         .setColor(0xf47fff)
-        .setThumbnail(guild.iconURL({ size: 128 }))
-        .setFooter({ text: 'NarisMC • Server Boost [TEST]' })
+        .setThumbnail(guild.iconURL({ size: 256 }) || 'https://cdn.discordapp.com/embed/avatars/0.png')
+        .setFooter({ text: `${guild.name} • Ulepszenia` })
         .setTimestamp();
 
-      await channel.send({ embeds: [boostEmbed] });
+      await channel.send({ content: `🎉 **Dziękujemy za ulepszenie serwera!** @${nick}`, embeds: [boostEmbed] });
       res.json({ success: true, message: `Testowy boost wysłany na #${channel.name}!` });
     } catch (e) {
       console.error('Boost test error:', e);

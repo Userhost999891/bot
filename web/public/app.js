@@ -150,6 +150,7 @@ function setupNavigation() {
       if (section === 'announcements') loadAnnouncementsData();
       if (section === 'rewards') loadRewardsData();
       if (section === 'tictactoe') loadTTTData();
+      if (section === 'boosts') loadBoostsData();
       if (section === 'boosttester') loadBoostTesterData();
     }
   }
@@ -294,6 +295,17 @@ function setupNavigation() {
         });
       }
 
+      const boostsSelect = $('boosts-channel');
+      if (boostsSelect) {
+        boostsSelect.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+        channels.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.id;
+          opt.textContent = `#${ch.name} (${ch.category})`;
+          boostsSelect.appendChild(opt);
+        });
+      }
+
       const container = $('visible-channels');
       container.innerHTML = '';
       channels.forEach(ch => {
@@ -381,6 +393,44 @@ function setupNavigation() {
       showSectionStatus('ver', data.message || data.error, data.success ? 'success' : 'error');
     } catch (e) { showSectionStatus('ver', 'Błąd wysyłania', 'error'); }
     finally { disableButtons(false); }
+  }
+
+  // =============================
+  // BOOSTS
+  // =============================
+  async function loadBoostsData() {
+    showSectionStatus('boosts', 'Ładowanie...', 'info');
+    await Promise.all([loadChannels(), loadBoostsConfig()]);
+    hideSectionStatus('boosts');
+  }
+
+  async function loadBoostsConfig() {
+    try {
+      const res = await fetch(`/api/guild/${selectedGuildId}/config`);
+      const config = await res.json();
+      if (config.boost_channel_id) $('boosts-channel').value = config.boost_channel_id;
+    } catch (e) {
+      console.error('Error loading boosts config:', e);
+    }
+  }
+
+  async function saveBoostsConfig() {
+    const boostChannelId = $('boosts-channel').value;
+
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/guild/${selectedGuildId}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ boost_channel_id: boostChannelId || null })
+      });
+      const data = await res.json();
+      showSectionStatus('boosts', data.message || data.error || 'Zapisano!', data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('boosts', 'Błąd zapisu', 'error');
+    } finally {
+      disableButtons(false);
+    }
   }
 
   // =============================
@@ -1179,6 +1229,12 @@ function setupNavigation() {
     const sendBoostBtn = $('send-boost-test-btn');
     if (sendBoostBtn) {
       sendBoostBtn.addEventListener('click', sendBoostTest);
+    }
+
+    // Boost config save button
+    const saveBoostsBtn = $('save-boosts-btn');
+    if (saveBoostsBtn) {
+      saveBoostsBtn.addEventListener('click', saveBoostsConfig);
     }
 
     // Reward modal overlay close
