@@ -83,32 +83,66 @@ module.exports = {
 
     // MODAL SUBMIT: Ticket Minecraft nickname
     if (interaction.isModalSubmit() && interaction.customId.startsWith('ticket_modal_')) {
-      await handleTicketModalSubmit(interaction);
+      try {
+        await handleTicketModalSubmit(interaction);
+      } catch (err) {
+        console.error('Ticket modal error:', err);
+        try {
+          const reply = { content: `❌〢Błąd tworzenia ticketa: ${err.message}`, ephemeral: true };
+          if (interaction.replied || interaction.deferred) await interaction.followUp(reply);
+          else await interaction.reply(reply);
+        } catch (e) { /* ignore */ }
+      }
     }
 
     // SELECT MENU: Ticket category
     if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category_select') {
-      await handleTicketCreate(interaction);
+      try {
+        await handleTicketCreate(interaction);
+      } catch (err) {
+        console.error('Ticket select error:', err);
+        try {
+          const reply = { content: `❌〢Błąd tworzenia ticketa: ${err.message}`, ephemeral: true };
+          if (interaction.replied || interaction.deferred) await interaction.followUp(reply);
+          else await interaction.reply(reply);
+        } catch (e) { /* ignore */ }
+      }
     }
 
     // BUTTON: Ticket close
     if (interaction.isButton() && interaction.customId === 'ticket_close') {
-      await handleTicketClose(interaction);
+      try {
+        await handleTicketClose(interaction);
+      } catch (err) {
+        console.error('Ticket close error:', err);
+      }
     }
 
     // BUTTON: Ticket claim
     if (interaction.isButton() && interaction.customId === 'ticket_claim') {
-      await handleTicketClaim(interaction);
+      try {
+        await handleTicketClaim(interaction);
+      } catch (err) {
+        console.error('Ticket claim error:', err);
+      }
     }
 
     // BUTTON: Ticket Set Tworca (LuckPerms parent set)
     if (interaction.isButton() && interaction.customId === 'ticket_set_tworca') {
-      await handleTicketSetTworca(interaction);
+      try {
+        await handleTicketSetTworca(interaction);
+      } catch (err) {
+        console.error('Ticket tworca error:', err);
+      }
     }
 
     // BUTTON: Ticket Set Media (LuckPerms parent set)
     if (interaction.isButton() && interaction.customId === 'ticket_set_media') {
-      await handleTicketSetMedia(interaction);
+      try {
+        await handleTicketSetMedia(interaction);
+      } catch (err) {
+        console.error('Ticket media error:', err);
+      }
     }
 
     // =============================

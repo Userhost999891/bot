@@ -160,7 +160,14 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
   // === CHECK: User cooldown (5 min) ===
   const lastTicketTime = await getLastUserTicketTime(guild.id, user.id);
   if (lastTicketTime) {
-    const lastTime = new Date(lastTicketTime + 'Z').getTime();
+    let lastTime;
+    if (lastTicketTime instanceof Date) {
+      lastTime = lastTicketTime.getTime();
+    } else {
+      // String from MySQL — append 'Z' only if no timezone info
+      const str = String(lastTicketTime);
+      lastTime = new Date(str.endsWith('Z') || str.includes('+') ? str : str + 'Z').getTime();
+    }
     const elapsed = Date.now() - lastTime;
     const remaining = COOLDOWN_MS - elapsed;
 
@@ -250,7 +257,7 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
         (screenshotLink ? `> 📸〢Screen/Dowód: **${screenshotLink}**\n` : '') +
         `> ⏰〢Utworzony: <t:${Math.floor(Date.now() / 1000)}:f>`
       )
-      .setColor(parseInt(category.color.replace('#', ''), 16) || 0x5865F2)
+      .setColor(category.color ? (parseInt(category.color.replace('#', ''), 16) || 0x5865F2) : 0x5865F2)
       .setFooter({ text: 'NarisMC • Tickety | /close' })
       .setTimestamp();
 
@@ -306,11 +313,11 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     await interaction.editReply({ embeds: [linkEmbed], components: [linkButton] });
 
   } catch (error) {
-    console.error('Error creating ticket:', error);
+    console.error('Error creating ticket:', error.message, error.stack);
     try {
-      await interaction.editReply({ content: '❌〢Wystąpił błąd podczas tworzenia ticketa.' });
+      await interaction.editReply({ content: `❌〢Wystąpił błąd podczas tworzenia ticketa: ${error.message}` });
     } catch (e) {
-      // ignore
+      console.error('Error sending ticket error reply:', e.message);
     }
   }
 }
