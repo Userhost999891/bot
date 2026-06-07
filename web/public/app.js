@@ -7,6 +7,7 @@
   let currentSection = 'servers';
   let botAvatar = '';
   let botName = 'NarisMC Bot';
+  let cachedChannels = [];
 
   const $ = id => document.getElementById(id);
 
@@ -252,6 +253,7 @@ function setupNavigation() {
     try {
       const res = await fetch(`/api/guild/${selectedGuildId}/channels`);
       const channels = await res.json();
+      cachedChannels = channels;
 
       const select = $('verification-channel');
       select.innerHTML = '<option value="">-- Wybierz kanał --</option>';
@@ -1171,6 +1173,130 @@ function setupNavigation() {
     }
   }
 
+  function setupAnnouncementsAutocomplete() {
+    const textarea = $('ann-content');
+    const menu = $('channel-autocomplete');
+    if (!textarea || !menu) return;
+
+    let activeIndex = -1;
+    let currentQuery = '';
+    let queryStartIndex = -1;
+
+    textarea.addEventListener('input', (e) => {
+      const text = textarea.value;
+      const caretPos = textarea.selectionStart;
+
+      // Szukamy ostatniego znaku '@' lub '#' przed kurorem
+      const textBeforeCaret = text.slice(0, caretPos);
+      const lastAt = textBeforeCaret.lastIndexOf('@');
+      const lastHash = textBeforeCaret.lastIndexOf('#');
+      const lastTrigger = Math.max(lastAt, lastHash);
+
+      if (lastTrigger !== -1) {
+        // Upewniamy się, że nie ma spacji między triggerem a kursorem
+        const word = textBeforeCaret.slice(lastTrigger + 1);
+        if (!/\s/.test(word)) {
+          currentQuery = word.toLowerCase();
+          queryStartIndex = lastTrigger;
+          showAutocompleteMenu();
+          return;
+        }
+      }
+
+      hideAutocompleteMenu();
+    });
+
+    textarea.addEventListener('keydown', (e) => {
+      if (menu.classList.contains('hidden')) return;
+
+      const items = menu.querySelectorAll('.autocomplete-item');
+      if (items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % items.length;
+        highlightItem(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        highlightItem(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex >= 0 && activeIndex < items.length) {
+          items[activeIndex].click();
+        } else if (items.length > 0) {
+          items[0].click();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideAutocompleteMenu();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target !== textarea && !menu.contains(e.target)) {
+        hideAutocompleteMenu();
+      }
+    });
+
+    function showAutocompleteMenu() {
+      const filtered = cachedChannels.filter(ch => 
+        ch.name.toLowerCase().includes(currentQuery) || 
+        ch.category.toLowerCase().includes(currentQuery)
+      ).slice(0, 5); // Limit 5 dla estetyki
+
+      if (filtered.length === 0) {
+        hideAutocompleteMenu();
+        return;
+      }
+
+      menu.innerHTML = '';
+      activeIndex = -1;
+
+      filtered.forEach((ch, idx) => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.innerHTML = `
+          <span>#${escapeHtml(ch.name)}</span>
+          <span class="channel-category">${escapeHtml(ch.category)}</span>
+        `;
+        div.addEventListener('click', () => {
+          const text = textarea.value;
+          const caretPos = textarea.selectionStart;
+          const before = text.slice(0, queryStartIndex);
+          const after = text.slice(caretPos);
+          const mention = `<#${ch.id}>`;
+          
+          textarea.value = before + mention + after;
+          textarea.focus();
+          
+          const newCaretPos = queryStartIndex + mention.length;
+          textarea.setSelectionRange(newCaretPos, newCaretPos);
+
+          hideAutocompleteMenu();
+        });
+        menu.appendChild(div);
+      });
+
+      menu.classList.remove('hidden');
+      menu.style.top = `${textarea.offsetTop + textarea.offsetHeight}px`;
+    }
+
+    function hideAutocompleteMenu() {
+      menu.classList.add('hidden');
+      activeIndex = -1;
+    }
+
+    function highlightItem(items) {
+      items.forEach((item, idx) => {
+        item.classList.toggle('active', idx === activeIndex);
+        if (idx === activeIndex) {
+          item.scrollIntoView({ block: 'nearest' });
+        }
+      });
+    }
+  }
+
   // =============================
   // UTILITIES
   // =============================
@@ -1245,6 +1371,7 @@ function setupNavigation() {
       });
     }
 
+    setupAnnouncementsAutocomplete();
     init();
   });
 })();
