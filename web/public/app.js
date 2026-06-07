@@ -683,18 +683,7 @@ function setupNavigation() {
   async function loadAnnouncementsData() {
     showSectionStatus('ann', 'Ładowanie...', 'info');
     try {
-      const annSelect = $('ann-channel');
-      if (annSelect.options.length <= 1) {
-        const res = await fetch(`/api/guild/${selectedGuildId}/channels`);
-        const channels = await res.json();
-        annSelect.innerHTML = '<option value="">-- Wybierz kanał --</option>';
-        channels.forEach(ch => {
-          const opt = document.createElement('option');
-          opt.value = ch.id;
-          opt.textContent = `#${ch.name} (${ch.category})`;
-          annSelect.appendChild(opt);
-        });
-      }
+      await loadChannels();
 
       const res = await fetch(`/api/announcements/guild/${selectedGuildId}/config`);
       const config = await res.json();
@@ -1193,13 +1182,16 @@ function setupNavigation() {
       const lastTrigger = Math.max(lastAt, lastHash);
 
       if (lastTrigger !== -1) {
-        // Upewniamy się, że nie ma spacji między triggerem a kursorem
-        const word = textBeforeCaret.slice(lastTrigger + 1);
-        if (!/\s/.test(word)) {
-          currentQuery = word.toLowerCase();
-          queryStartIndex = lastTrigger;
-          showAutocompleteMenu();
-          return;
+        const charBefore = lastTrigger > 0 ? textBeforeCaret.charAt(lastTrigger - 1) : ' ';
+        // Triggeruj tylko gdy przed triggerem jest spacja/znak nowej linii LUB jest to początek tekstu
+        if (/\s/.test(charBefore)) {
+          const word = textBeforeCaret.slice(lastTrigger + 1);
+          if (!/\s/.test(word)) {
+            currentQuery = word.toLowerCase();
+            queryStartIndex = lastTrigger;
+            showAutocompleteMenu();
+            return;
+          }
         }
       }
 
