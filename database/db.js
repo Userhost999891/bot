@@ -106,8 +106,14 @@ async function getPool() {
         claimed_by VARCHAR(20),
         ticket_number INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
+    // Migracja: konwersja active_tickets na utf8mb4 (dla istniejących tabel)
+    try {
+      await pool.execute(`ALTER TABLE active_tickets CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    } catch (e) {
+      // Ignoruj jeśli już skonwertowane
+    }
     try {
       await pool.execute(`
         ALTER TABLE active_tickets ADD COLUMN mc_nick VARCHAR(16) DEFAULT NULL
