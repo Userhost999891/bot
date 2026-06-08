@@ -617,6 +617,21 @@ async function markRewardClaimed(playerName, serverId) {
     [playerName.toLowerCase(), serverId]
   );
 }
+async function removeReward(playerName, serverId) {
+  const p = await getPool();
+  const nick = playerName.toLowerCase();
+  let removed = 0;
+  if (serverId) {
+    const [r1] = await p.execute('DELETE FROM rewards_pending WHERE player_name = ? AND server_id = ?', [nick, serverId]);
+    const [r2] = await p.execute('DELETE FROM rewards_claimed WHERE player_name = ? AND server_id = ?', [nick, serverId]);
+    removed = (r1.affectedRows || 0) + (r2.affectedRows || 0);
+  } else {
+    const [r1] = await p.execute('DELETE FROM rewards_pending WHERE player_name = ?', [nick]);
+    const [r2] = await p.execute('DELETE FROM rewards_claimed WHERE player_name = ?', [nick]);
+    removed = (r1.affectedRows || 0) + (r2.affectedRows || 0);
+  }
+  return removed;
+}
 
 // =====================
 // PENDING COMMANDS (Discord → MC)
@@ -662,7 +677,7 @@ module.exports = {
   // Rewards
   getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer, getRewardServerByClink,
   getAllRewardChannels, getServerByChannel,
-  hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed,
+  hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed, removeReward,
   // Pending Commands
   addPendingCommand, getPendingCommandsList, markCommandExecuted, markCommandFailed
 };

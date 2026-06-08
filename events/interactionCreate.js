@@ -16,6 +16,17 @@ const pendingQuestions = new Map();
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction) {
+    // AUTOCOMPLETE
+    if (interaction.isAutocomplete()) {
+      const command = interaction.client.commands?.get(interaction.commandName);
+      if (!command || !command.autocomplete) return;
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+      }
+      return;
+    }
 
     // BUTTON: Verification
     if (interaction.isButton() && interaction.customId === 'verify_button') {
