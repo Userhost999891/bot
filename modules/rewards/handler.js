@@ -1,6 +1,6 @@
 // Rewards module — listens for nicks on configured channels, saves to MySQL per server
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { hasClaimedReward, addPendingReward, getAllRewardChannels, getServerByChannel } = require('../../database/db');
+const { hasClaimedReward, addPendingReward, getAllRewardChannels, getServerByChannel, getConfig, removeReward } = require('../../database/db');
 
 // Cache: channel_id → { server_id, server_name, guild_id }
 let rewardChannels = new Map();
@@ -75,15 +75,31 @@ async function handleRewardMessage(message) {
   }
 
   try {
-    const alreadyClaimed = await hasClaimedReward(playerName, serverInfo.server_id);
+    let isBypass = false;
+    try {
+      const config = await getConfig(message.guild.id);
+      if (config && config.reward_bypass_ids) {
+        const bypassIds = config.reward_bypass_ids.split(',').map(id => id.trim());
+        if (bypassIds.includes(message.author.id)) {
+          isBypass = true;
+        }
+      }
+    } catch (err) {
+      console.error('Błąd wczytywania bypassu:', err);
+    }
 
-    if (alreadyClaimed) {
-      const embed = new EmbedBuilder()
-        .setDescription(`❌〢Gracz **${playerName}** już otrzymał nagrodę na **${serverInfo.server_name}**!`)
-        .setColor(0xf04747);
-      const reply = await message.reply({ embeds: [embed] });
-      setTimeout(() => { try { reply.delete(); message.delete(); } catch(e) {} }, 8000);
-      return;
+    if (isBypass) {
+      await removeReward(playerName, serverInfo.server_id);
+    } else {
+      const alreadyClaimed = await hasClaimedReward(playerName, serverInfo.server_id);
+      if (alreadyClaimed) {
+        const embed = new EmbedBuilder()
+          .setDescription(`❌〢Gracz **${playerName}** już otrzymał nagrodę na **${serverInfo.server_name}**!`)
+          .setColor(0xf04747);
+        const reply = await message.reply({ embeds: [embed] });
+        setTimeout(() => { try { reply.delete(); message.delete(); } catch(e) {} }, 8000);
+        return;
+      }
     }
 
     // Save with server_id

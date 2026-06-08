@@ -9,7 +9,7 @@ const {
   TextInputStyle
 } = require('discord.js');
 
-const { getRewardServers, hasClaimedReward, addPendingReward } = require('../../database/db');
+const { getRewardServers, hasClaimedReward, addPendingReward, getConfig, removeReward } = require('../../database/db');
 
 /**
  * Wysyła panel nagród z listą serwerów i przyciskami "Odbierz".
@@ -118,17 +118,34 @@ async function handleRewardModalSubmit(interaction) {
   }
 
   try {
-    // Sprawdzenie czy gracz już odebrał nagrodę na tym trybie
-    const alreadyClaimed = await hasClaimedReward(mcNick, serverId);
+    let isBypass = false;
+    try {
+      const config = await getConfig(interaction.guild.id);
+      if (config && config.reward_bypass_ids) {
+        const bypassIds = config.reward_bypass_ids.split(',').map(id => id.trim());
+        if (bypassIds.includes(interaction.user.id)) {
+          isBypass = true;
+        }
+      }
+    } catch (err) {
+      console.error('Błąd wczytywania bypassu w modal:', err);
+    }
 
-    if (alreadyClaimed) {
-      return interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setDescription(`❌〢Gracz **${mcNick}** już otrzymał nagrodę na tym trybie!`)
-            .setColor(0xf04747)
-        ]
-      });
+    if (isBypass) {
+      await removeReward(mcNick, serverId);
+    } else {
+      // Sprawdzenie czy gracz już odebrał nagrodę na tym trybie
+      const alreadyClaimed = await hasClaimedReward(mcNick, serverId);
+
+      if (alreadyClaimed) {
+        return interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setDescription(`❌〢Gracz **${mcNick}** już otrzymał nagrodę na tym trybie!`)
+              .setColor(0xf04747)
+          ]
+        });
+      }
     }
 
     // Zapis nagrody do bazy

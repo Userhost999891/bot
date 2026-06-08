@@ -1,6 +1,6 @@
 // Rewards API — multi-server management
 const express = require('express');
-const { getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer } = require('../../database/db');
+const { getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer, getConfig, setConfig, removeReward } = require('../../database/db');
 const { refreshChannelCache, setupRewardChannelPerms } = require('../../modules/rewards/handler');
 
 function authMiddleware(req, res, next) {
@@ -96,6 +96,43 @@ module.exports = function(discordClient) {
     } catch (e) {
       console.error('Send reward panel error:', e);
       res.status(500).json({ error: 'Błąd wysyłania: ' + e.message });
+    }
+  });
+
+  // Get bypass config
+  router.get('/guild/:id/bypass-config', authMiddleware, async (req, res) => {
+    try {
+      const config = await getConfig(req.params.id);
+      res.json({ reward_bypass_ids: config ? config.reward_bypass_ids : '' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Save bypass config
+  router.post('/guild/:id/bypass-config', authMiddleware, async (req, res) => {
+    try {
+      const { reward_bypass_ids } = req.body;
+      await setConfig(req.params.id, { reward_bypass_ids: reward_bypass_ids || '' });
+      res.json({ success: true, message: 'Konfiguracja deweloperów zapisana!' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Unreward gracz (Web version of /unreward)
+  router.post('/guild/:id/unreward', authMiddleware, async (req, res) => {
+    try {
+      const { player_name, server_id } = req.body;
+      if (!player_name) {
+        return res.status(400).json({ error: 'Podaj nick gracza Minecraft!' });
+      }
+
+      const count = await removeReward(player_name, server_id || null);
+
+      if (count > 0) {
+        res.json({ success: true, message: `Pomyślnie cofnięto nagrodę dla ${player_name}! Usunięto ${count} wpis(y).` });
+      } else {
+        res.status(400).json({ error: `Nie znaleziono odebranych nagród dla gracza ${player_name} w bazie.` });
+      }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   });
 

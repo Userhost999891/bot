@@ -824,6 +824,15 @@ function setupNavigation() {
           panelSelect.appendChild(opt);
         });
       }
+      // Load Developer Bypass config
+      try {
+        const bypassRes = await fetch(`/api/rewards/guild/${selectedGuildId}/bypass-config`);
+        const bypassData = await bypassRes.json();
+        const bypassInput = $('rew-bypass-ids');
+        if (bypassInput) {
+          bypassInput.value = bypassData.reward_bypass_ids || '';
+        }
+      } catch (err) { console.error('Error loading bypass config:', err); }
     } catch (e) { console.error('Error loading rewards:', e); }
     hideSectionStatus('rew');
   }
@@ -833,6 +842,18 @@ function setupNavigation() {
       const res = await fetch(`/api/rewards/guild/${selectedGuildId}/servers`);
       const servers = await res.json();
       const list = $('reward-servers-list');
+
+      // Populate unreward server select
+      const unrewardServerSelect = $('rew-unreward-server');
+      if (unrewardServerSelect) {
+        unrewardServerSelect.innerHTML = '<option value="">-- Wszystkie serwery --</option>';
+        servers.forEach(srv => {
+          const opt = document.createElement('option');
+          opt.value = srv.server_id;
+          opt.textContent = srv.server_name;
+          unrewardServerSelect.appendChild(opt);
+        });
+      }
 
       if (servers.length === 0) {
         list.innerHTML = '<p class="text-muted">Brak serwerów. Dodaj pierwszy serwer MC!</p>';
@@ -962,6 +983,58 @@ function setupNavigation() {
       showSectionStatus('rew', data.message || data.error, data.success ? 'success' : 'error');
     } catch (e) {
       showSectionStatus('rew', 'Błąd wysyłania', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  async function saveRewardBypass() {
+    const bypassIdsInput = $('rew-bypass-ids');
+    if (!bypassIdsInput) return;
+    const reward_bypass_ids = bypassIdsInput.value.trim();
+
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/rewards/guild/${selectedGuildId}/bypass-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reward_bypass_ids })
+      });
+      const data = await res.json();
+      showSectionStatus('rew', data.message || data.error, data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('rew', 'Błąd zapisu konfiguracji bypassu', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  async function submitUnreward() {
+    const nickInput = $('rew-unreward-nick');
+    const serverSelect = $('rew-unreward-server');
+    if (!nickInput || !serverSelect) return;
+
+    const playerName = nickInput.value.trim();
+    const serverId = serverSelect.value;
+
+    if (!playerName) {
+      return showSectionStatus('rew', 'Wpisz nick gracza!', 'error');
+    }
+
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/rewards/guild/${selectedGuildId}/unreward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_name: playerName, server_id: serverId })
+      });
+      const data = await res.json();
+      showSectionStatus('rew', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success) {
+        nickInput.value = '';
+      }
+    } catch (e) {
+      showSectionStatus('rew', 'Błąd cofania nagrody', 'error');
     } finally {
       disableButtons(false);
     }
@@ -1447,6 +1520,18 @@ function setupNavigation() {
     const sendRewPanelBtn = $('send-reward-panel-btn');
     if (sendRewPanelBtn) {
       sendRewPanelBtn.addEventListener('click', sendRewardPanel);
+    }
+
+    // Save developer bypass button
+    const saveBypassBtn = $('save-reward-bypass-btn');
+    if (saveBypassBtn) {
+      saveBypassBtn.addEventListener('click', saveRewardBypass);
+    }
+
+    // Web unreward submit button
+    const unrewardBtn = $('unreward-submit-btn');
+    if (unrewardBtn) {
+      unrewardBtn.addEventListener('click', submitUnreward);
     }
 
     // Boost tester button
