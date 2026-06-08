@@ -813,6 +813,17 @@ function setupNavigation() {
       const res = await fetch(`/api/guild/${selectedGuildId}/channels`);
       rewardChannelsCache = await res.json();
       await loadRewardServers();
+      // Populate channel select for interactive panel
+      const panelSelect = $('rew-panel-channel');
+      if (panelSelect) {
+        panelSelect.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+        rewardChannelsCache.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.id;
+          opt.textContent = `#${ch.name} (${ch.category})`;
+          panelSelect.appendChild(opt);
+        });
+      }
     } catch (e) { console.error('Error loading rewards:', e); }
     hideSectionStatus('rew');
   }
@@ -933,6 +944,27 @@ function setupNavigation() {
       showSectionStatus('rew', data.message || data.error, data.success ? 'success' : 'error');
       await loadRewardServers();
     } catch (e) { showSectionStatus('rew', 'Błąd usuwania', 'error'); }
+  }
+
+  async function sendRewardPanel() {
+    const channelId = $('rew-panel-channel').value;
+    if (!channelId) return showSectionStatus('rew', 'Wybierz kanał!', 'error');
+    if (!confirm('Wysłać wiadomość interaktywną z przyciskami nagród na wybrany kanał?')) return;
+
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/rewards/guild/${selectedGuildId}/send-reward-panel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_id: channelId })
+      });
+      const data = await res.json();
+      showSectionStatus('rew', data.message || data.error, data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('rew', 'Błąd wysyłania', 'error');
+    } finally {
+      disableButtons(false);
+    }
   }
 
   // =============================
@@ -1410,6 +1442,12 @@ function setupNavigation() {
     $('add-reward-server-btn').addEventListener('click', openAddRewardServer);
     $('rew-modal-save-btn').addEventListener('click', saveRewardServer);
     $('rew-modal-cancel-btn').addEventListener('click', closeRewardServerModal);
+
+    // Send reward panel button
+    const sendRewPanelBtn = $('send-reward-panel-btn');
+    if (sendRewPanelBtn) {
+      sendRewPanelBtn.addEventListener('click', sendRewardPanel);
+    }
 
     // Boost tester button
     const sendBoostBtn = $('send-boost-test-btn');

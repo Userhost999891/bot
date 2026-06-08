@@ -73,5 +73,31 @@ module.exports = function(discordClient) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Send interactive reward panel to a Discord channel
+  router.post('/guild/:id/send-reward-panel', authMiddleware, async (req, res) => {
+    try {
+      const { channel_id } = req.body;
+      if (!channel_id) return res.status(400).json({ error: 'Wybierz kanał!' });
+
+      const guild = discordClient.guilds.cache.get(req.params.id);
+      if (!guild) return res.status(404).json({ error: 'Serwer nie znaleziony!' });
+
+      const channel = guild.channels.cache.get(channel_id);
+      if (!channel) return res.status(404).json({ error: 'Kanał nie znaleziony!' });
+
+      const { sendRewardPanel } = require('../../modules/rewards/interactive');
+      const result = await sendRewardPanel(channel, req.params.id);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.message });
+      }
+
+      res.json({ success: true, message: `Wiadomość interaktywna wysłana na #${channel.name}!` });
+    } catch (e) {
+      console.error('Send reward panel error:', e);
+      res.status(500).json({ error: 'Błąd wysyłania: ' + e.message });
+    }
+  });
+
   return router;
 };

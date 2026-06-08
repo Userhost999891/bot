@@ -1,4 +1,4 @@
-// Unified interaction handler — Verification + Tickets + TicTacToe + Commands
+// Unified interaction handler — Verification + Tickets + TicTacToe + Rewards + Commands
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { getRandomQuestion } = require('../modules/verification/questions');
 const { handleVerification, assignVerifiedRole } = require('../modules/verification/handler');
@@ -6,6 +6,9 @@ const {
   handleTicketCreate, handleTicketModalSubmit, handleTicketClose,
   handleTicketClaim, handleTicketSetTworca, handleTicketSetMedia
 } = require('../modules/tickets/handler');
+const {
+  handleRewardClaimButton, handleRewardModalSubmit
+} = require('../modules/rewards/interactive');
 const { activeGames, matchmakingQueue, handleMove, createGame, buildBoardComponents, buildGameEmbed } = require('../modules/tictactoe/handler');
 
 const pendingQuestions = new Map();
@@ -142,6 +145,38 @@ module.exports = {
         await handleTicketSetMedia(interaction);
       } catch (err) {
         console.error('Ticket media error:', err);
+      }
+    }
+
+    // =============================
+    // REWARD INTERACTIVE BUTTONS
+    // =============================
+
+    // BUTTON: Reward claim (show modal)
+    if (interaction.isButton() && interaction.customId.startsWith('reward_claim_')) {
+      try {
+        await handleRewardClaimButton(interaction);
+      } catch (err) {
+        console.error('Reward claim button error:', err);
+        try {
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌〢Wystąpił błąd. Spróbuj ponownie.', ephemeral: true });
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    // MODAL: Reward claim (process nick)
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('reward_modal_')) {
+      try {
+        await handleRewardModalSubmit(interaction);
+      } catch (err) {
+        console.error('Reward modal error:', err);
+        try {
+          const reply = { content: `❌〢Błąd odbioru nagrody: ${err.message}`, ephemeral: true };
+          if (interaction.replied || interaction.deferred) await interaction.followUp(reply);
+          else await interaction.reply(reply);
+        } catch (e) { /* ignore */ }
       }
     }
 

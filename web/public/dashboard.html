@@ -437,14 +437,32 @@
         </div>
       </div>
 
+      <!-- SEND INTERACTIVE MESSAGE -->
+      <div class="config-grid" style="margin-top: 24px;">
+        <div class="config-card">
+          <h3 class="config-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg> Wyślij wiadomość interaktywną</h3>
+          <p class="config-card-desc">Wyślij wiadomość z przyciskami "Odbierz" dla każdego trybu na wybrany kanał. Gracz klika przycisk → wpisuje nick → odbiera nagrodę.</p>
+          <select class="config-select" id="rew-panel-channel">
+            <option value="">-- Wybierz kanał --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="action-buttons" style="margin-top: 16px;">
+        <button class="action-btn action-btn-send" id="send-reward-panel-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Wyślij wiadomość interaktywną
+        </button>
+      </div>
+
       <!-- HOW IT WORKS -->
       <div class="info-card">
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Jak to działa?</h3>
         <p>1️⃣ Dodaj serwer MC (np. <strong>survival</strong>) i przypisz kanał Discord (np. <strong>#nagroda-survival</strong>)</p>
         <p>2️⃣ W pluginie MC ustaw <code>server-id: "survival"</code> — musi pasować do ID powyżej!</p>
-        <p>3️⃣ Gracz pisze nick na <strong>#nagroda-survival</strong> → bot zapisuje do MySQL z trybem "survival"</p>
-        <p>4️⃣ Plugin MC z <code>server-id: "survival"</code> czyta i daje nagrodę</p>
-        <p style="margin-top: 8px; color: var(--teal);">🌐 Każdy serwer MC ma swój kanał i daje nagrodę osobno!</p>
+        <p>3️⃣ Kliknij <strong>Wyślij wiadomość interaktywną</strong> — bot wyśle panel z przyciskami na wybrany kanał</p>
+        <p>4️⃣ Gracz klika "Odbierz" przy swoim trybie, wpisuje nick → nagroda zostaje nadana automatycznie</p>
+        <p style="margin-top: 8px; color: var(--teal);">🌐 Każdy serwer MC ma osobny przycisk i nagrodę!</p>
       </div>
     </section>
 
