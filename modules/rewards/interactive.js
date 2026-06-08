@@ -121,12 +121,16 @@ async function handleRewardModalSubmit(interaction) {
     let isBypass = false;
     try {
       const config = await getConfig(interaction.guild.id);
+      console.log(`[DEBUG BYPASS] User: ${interaction.user.id} (${interaction.user.tag}), Guild: ${interaction.guild.id}`);
+      console.log(`[DEBUG BYPASS] Config:`, config);
       if (config && config.reward_bypass_ids) {
         const bypassIds = config.reward_bypass_ids.split(',').map(id => id.trim());
+        console.log(`[DEBUG BYPASS] Parsed bypass IDs:`, bypassIds);
         if (bypassIds.includes(interaction.user.id)) {
           isBypass = true;
         }
       }
+      console.log(`[DEBUG BYPASS] Result: isBypass = ${isBypass}`);
     } catch (err) {
       console.error('Błąd wczytywania bypassu w modal:', err);
     }
