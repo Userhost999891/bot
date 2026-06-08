@@ -136,10 +136,12 @@ async function handleRewardModalSubmit(interaction) {
     }
 
     if (isBypass) {
-      await removeReward(mcNick, serverId);
+      const removedCount = await removeReward(mcNick, serverId);
+      console.log(`[DEBUG BYPASS] removeReward executed for player: ${mcNick}, server: ${serverId}. Removed rows count: ${removedCount}`);
     } else {
       // Sprawdzenie czy gracz już odebrał nagrodę na tym trybie
       const alreadyClaimed = await hasClaimedReward(mcNick, serverId);
+      console.log(`[DEBUG BYPASS] Regular check: alreadyClaimed = ${alreadyClaimed}`);
 
       if (alreadyClaimed) {
         return interaction.editReply({
@@ -153,6 +155,7 @@ async function handleRewardModalSubmit(interaction) {
     }
 
     // Zapis nagrody do bazy
+    console.log(`[DEBUG BYPASS] Calling addPendingReward for ${mcNick} on server ${serverId}...`);
     await addPendingReward(
       mcNick,
       interaction.user.id,
@@ -160,6 +163,7 @@ async function handleRewardModalSubmit(interaction) {
       interaction.guild.id,
       serverId
     );
+    console.log(`[DEBUG BYPASS] addPendingReward completed successfully!`);
 
     return interaction.editReply({
       embeds: [
@@ -173,7 +177,7 @@ async function handleRewardModalSubmit(interaction) {
       ]
     });
   } catch (error) {
-    // Obsługa duplikatu na poziomie bazy (UNIQUE constraint)
+    console.error('[DEBUG BYPASS ERROR] Catch block caught an error:', error);
     if (error.code === 'ER_DUP_ENTRY') {
       return interaction.editReply({
         embeds: [
