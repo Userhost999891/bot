@@ -83,6 +83,14 @@ async function getPool() {
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
+    try {
+      await pool.execute(`
+        ALTER TABLE rewards_pending DROP INDEX unique_player
+      `);
+      console.log('✅ Migracja: Usunięto przestarzały indeks unique_player z rewards_pending.');
+    } catch (e) {
+      // Ignoruj błąd jeśli indeks nie istnieje lub został już usunięty
+    }
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS saved_roles (
         guild_id VARCHAR(20),
