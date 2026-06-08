@@ -833,6 +833,7 @@ function setupNavigation() {
           bypassInput.value = bypassData.reward_bypass_ids || '';
         }
       } catch (err) { console.error('Error loading bypass config:', err); }
+      updateCustomSelects();
     } catch (e) { console.error('Error loading rewards:', e); }
     hideSectionStatus('rew');
   }
@@ -857,6 +858,7 @@ function setupNavigation() {
 
       if (servers.length === 0) {
         list.innerHTML = '<p class="text-muted">Brak serwerów. Dodaj pierwszy serwer MC!</p>';
+        updateCustomSelects();
         return;
       }
 
@@ -881,6 +883,7 @@ function setupNavigation() {
         card.querySelector('[data-delete]').addEventListener('click', () => deleteRewardServer(srv.id, srv.server_name));
         list.appendChild(card);
       });
+      updateCustomSelects();
     } catch (e) { console.error('Error loading reward servers:', e); }
   }
 
