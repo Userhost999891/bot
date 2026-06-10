@@ -6,8 +6,11 @@ const {
   ButtonStyle,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  AttachmentBuilder
 } = require('discord.js');
+const path = require('path');
+const fs = require('fs');
 
 const { getRewardServers, hasClaimedReward, addPendingReward, getConfig, removeReward } = require('../../database/db');
 
@@ -23,6 +26,19 @@ async function sendRewardPanel(channel, guildId) {
     return { success: false, message: 'Brak skonfigurowanych serwerów nagród! Najpierw dodaj serwery w panelu.' };
   }
 
+  // Ścieżka do pliku prezent.png w folderze assets w głównym katalogu projektu
+  const imagePath = path.join(__dirname, '../../assets/prezent.png');
+  const files = [];
+  let thumbnailSrc = 'https://mc-heads.net/avatar/MHF_Gift/128'; // fallback do steve'a
+
+  if (fs.existsSync(imagePath)) {
+    const attachment = new AttachmentBuilder(imagePath, { name: 'prezent.png' });
+    files.push(attachment);
+    thumbnailSrc = 'attachment://prezent.png';
+  } else {
+    console.warn(`[WARNING] Plik prezent.png nie został znaleziony w: ${imagePath}. Używam domyślnego awatara (Steve).`);
+  }
+
   // Budowanie embeda z instrukcjami
   const embed = new EmbedBuilder()
     .setTitle('🎁〢Nagrody Discord')
@@ -33,7 +49,7 @@ async function sendRewardPanel(channel, guildId) {
       '3. Nagroda zostanie nadana automatycznie, jeżeli jesteś online.'
     )
     .setColor(0x5865F2)
-    .setThumbnail('https://mc-heads.net/avatar/MHF_Gift/128')
+    .setThumbnail(thumbnailSrc)
     .setFooter({ text: 'NarisMC • Nagrody' })
     .setTimestamp();
 
@@ -66,7 +82,7 @@ async function sendRewardPanel(channel, guildId) {
     );
   }
 
-  await channel.send({ embeds: [embed], components: rows });
+  await channel.send({ embeds: [embed], components: rows, files: files });
   return { success: true };
 }
 
