@@ -258,11 +258,25 @@ module.exports = function(discordClient) {
         if (channel.isThread && channel.isThread()) continue;
 
         try {
-          if (visibleChannels.includes(channel.id) || channel.id === config.verification_channel_id) {
+          const isVisible = visibleChannels.includes(channel.id) || 
+                            channel.id === config.verification_channel_id || 
+                            channel.id === config.lobby_channel_id;
+
+          if (isVisible) {
             await channel.permissionOverwrites.edit(guild.roles.everyone, {
               ViewChannel: true,
               ReadMessageHistory: true,
               SendMessages: channel.id === config.verification_channel_id ? false : null
+            });
+            await channel.permissionOverwrites.edit(unverifiedRole, {
+              ViewChannel: true,
+              ReadMessageHistory: true,
+              SendMessages: channel.id === config.verification_channel_id ? false : null
+            });
+            processed++;
+          } else {
+            await channel.permissionOverwrites.edit(unverifiedRole, {
+              ViewChannel: false
             });
             processed++;
           }

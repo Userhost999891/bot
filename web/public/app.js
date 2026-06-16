@@ -247,7 +247,10 @@ function setupNavigation() {
   // =============================
   async function loadVerificationData() {
     showSectionStatus('ver', 'Ładowanie...', 'info');
-    await Promise.all([loadChannels(), loadVerificationConfig()]);
+    await loadChannels();
+    await loadRoles();
+    await loadVerificationConfig();
+    updateCustomSelects();
     hideSectionStatus('ver');
   }
 
@@ -334,6 +337,29 @@ function setupNavigation() {
       const roles = await res.json();
       if (Array.isArray(roles)) {
         cachedRoles = roles;
+
+        const verifiedSelect = $('verified-role-name');
+        const unverifiedSelect = $('unverified-role-name');
+
+        if (verifiedSelect) {
+          verifiedSelect.innerHTML = '<option value="">-- Wybierz rolę --</option>';
+          roles.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.name;
+            opt.textContent = r.name;
+            verifiedSelect.appendChild(opt);
+          });
+        }
+
+        if (unverifiedSelect) {
+          unverifiedSelect.innerHTML = '<option value="">-- Wybierz rolę --</option>';
+          roles.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.name;
+            opt.textContent = r.name;
+            unverifiedSelect.appendChild(opt);
+          });
+        }
       }
     } catch (e) {
       console.error('Error fetching roles:', e);
@@ -365,7 +391,7 @@ function setupNavigation() {
     document.querySelectorAll('#visible-channels input:checked').forEach(cb => visibleChannels.push(cb.value));
 
     if (!verificationChannelId) return showSectionStatus('ver', 'Wybierz kanał weryfikacji!', 'error');
-    if (!verifiedRoleName || !unverifiedRoleName) return showSectionStatus('ver', 'Uzupełnij nazwy ról!', 'error');
+    if (!verifiedRoleName || !unverifiedRoleName) return showSectionStatus('ver', 'Wybierz role!', 'error');
 
     try {
       disableButtons(true);
