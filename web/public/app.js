@@ -454,7 +454,9 @@ function setupNavigation() {
   // =============================
   async function loadLobbyData() {
     showSectionStatus('lobby', 'Ładowanie...', 'info');
-    await Promise.all([loadChannels(), loadLobbyConfig()]);
+    await loadChannels();
+    await loadLobbyConfig();
+    updateCustomSelects();
     hideSectionStatus('lobby');
   }
 

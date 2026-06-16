@@ -810,6 +810,10 @@ body {
 }
 
 /* === CUSTOM SELECT UI === */
+.config-card:has(.custom-select-wrapper.open),
+.modal-card:has(.custom-select-wrapper.open) {
+  z-index: 100;
+}
 .custom-select-wrapper {
   position: relative;
   width: 100%;
