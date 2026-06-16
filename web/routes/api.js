@@ -145,21 +145,23 @@ module.exports = function(discordClient) {
       verified_role_name: 'Zweryfikowany',
       unverified_role_name: 'Niezweryfikowany',
       visible_channels: [],
-      boost_channel_id: null
+      boost_channel_id: null,
+      lobby_channel_id: null
     });
   });
 
   // Save verification config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     try {
-      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels, boost_channel_id } = req.body;
+      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels, boost_channel_id, lobby_channel_id } = req.body;
 
       await setConfig(req.params.id, {
         verification_channel_id,
         verified_role_name,
         unverified_role_name,
         visible_channels: visible_channels || [],
-        boost_channel_id: boost_channel_id || null
+        boost_channel_id: boost_channel_id || null,
+        lobby_channel_id: lobby_channel_id || null
       });
 
       res.json({ success: true, message: 'Konfiguracja zapisana!' });

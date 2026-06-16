@@ -1,9 +1,17 @@
-// GuildMemberAdd event — assigns unverified role to new members
+// GuildMemberAdd event — assigns unverified role to new members + welcome message
 const { getConfig } = require('../database/db');
+const { sendWelcomeMessage } = require('../modules/lobby/lobby');
 
 module.exports = {
   name: 'guildMemberAdd',
   async execute(member) {
+    // Wiadomość powitalna (lobby)
+    try {
+      await sendWelcomeMessage(member);
+    } catch (err) {
+      console.error(`[Lobby] Błąd wysyłania wiadomości powitalnej dla ${member.user.tag}:`, err);
+    }
+
     const config = await getConfig(member.guild.id);
     if (!config) return;
 

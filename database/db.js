@@ -85,6 +85,14 @@ async function getPool() {
     }
     try {
       await pool.execute(`
+        ALTER TABLE guild_config ADD COLUMN lobby_channel_id VARCHAR(20) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę lobby_channel_id do guild_config.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
+    try {
+      await pool.execute(`
         ALTER TABLE rewards_pending DROP INDEX unique_player
       `);
       console.log('✅ Migracja: Usunięto przestarzały indeks unique_player z rewards_pending.');
@@ -248,6 +256,7 @@ async function setConfig(guildId, config) {
   if (existing) {
     const boostChannel = config.boost_channel_id !== undefined ? (config.boost_channel_id || null) : existing.boost_channel_id;
     const rewardBypassIds = config.reward_bypass_ids !== undefined ? (config.reward_bypass_ids || null) : existing.reward_bypass_ids;
+    const lobbyChannel = config.lobby_channel_id !== undefined ? (config.lobby_channel_id || null) : existing.lobby_channel_id;
     await p.execute(`
       UPDATE guild_config SET
         verification_channel_id = COALESCE(?, verification_channel_id),
@@ -256,7 +265,8 @@ async function setConfig(guildId, config) {
         visible_channels = COALESCE(?, visible_channels),
         verification_message_id = COALESCE(?, verification_message_id),
         boost_channel_id = ?,
-        reward_bypass_ids = ?
+        reward_bypass_ids = ?,
+        lobby_channel_id = ?
       WHERE guild_id = ?
     `, [
       config.verification_channel_id || null,
@@ -266,12 +276,13 @@ async function setConfig(guildId, config) {
       config.verification_message_id || null,
       boostChannel,
       rewardBypassIds,
+      lobbyChannel,
       guildId
     ]);
   } else {
     await p.execute(`
-      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, visible_channels, verification_message_id, boost_channel_id, reward_bypass_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, visible_channels, verification_message_id, boost_channel_id, reward_bypass_ids, lobby_channel_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       guildId,
       config.verification_channel_id || null,
@@ -280,7 +291,8 @@ async function setConfig(guildId, config) {
       channelsStr,
       config.verification_message_id || null,
       config.boost_channel_id || null,
-      config.reward_bypass_ids || null
+      config.reward_bypass_ids || null,
+      config.lobby_channel_id || null
     ]);
   }
 }

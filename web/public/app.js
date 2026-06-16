@@ -153,6 +153,7 @@ function setupNavigation() {
       if (section === 'rewards') loadRewardsData();
       if (section === 'tictactoe') loadTTTData();
       if (section === 'boosts') loadBoostsData();
+      if (section === 'lobby') loadLobbyData();
       if (section === 'boosttester') loadBoostTesterData();
     }
   }
@@ -443,6 +444,55 @@ function setupNavigation() {
       showSectionStatus('boosts', data.message || data.error || 'Zapisano!', data.success ? 'success' : 'error');
     } catch (e) {
       showSectionStatus('boosts', 'Błąd zapisu', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  // =============================
+  // LOBBY / POWITANIA
+  // =============================
+  async function loadLobbyData() {
+    showSectionStatus('lobby', 'Ładowanie...', 'info');
+    await Promise.all([loadChannels(), loadLobbyConfig()]);
+    hideSectionStatus('lobby');
+  }
+
+  async function loadLobbyConfig() {
+    try {
+      const res = await fetch(`/api/guild/${selectedGuildId}/config`);
+      const config = await res.json();
+
+      // Populate lobby channel select
+      const select = $('lobby-channel');
+      select.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+      cachedChannels.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.id;
+        opt.textContent = `#${ch.name}`;
+        select.appendChild(opt);
+      });
+
+      if (config.lobby_channel_id) select.value = config.lobby_channel_id;
+    } catch (e) {
+      console.error('Error loading lobby config:', e);
+    }
+  }
+
+  async function saveLobbyConfig() {
+    const lobbyChannelId = $('lobby-channel').value;
+
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/guild/${selectedGuildId}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lobby_channel_id: lobbyChannelId || null })
+      });
+      const data = await res.json();
+      showSectionStatus('lobby', data.message || data.error || 'Zapisano!', data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('lobby', 'Błąd zapisu', 'error');
     } finally {
       disableButtons(false);
     }
@@ -1547,6 +1597,12 @@ function setupNavigation() {
     const saveBoostsBtn = $('save-boosts-btn');
     if (saveBoostsBtn) {
       saveBoostsBtn.addEventListener('click', saveBoostsConfig);
+    }
+
+    // Lobby config save button
+    const saveLobbyBtn = $('save-lobby-config-btn');
+    if (saveLobbyBtn) {
+      saveLobbyBtn.addEventListener('click', saveLobbyConfig);
     }
 
     // Reward modal overlay close
