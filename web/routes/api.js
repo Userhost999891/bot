@@ -266,7 +266,13 @@ module.exports = function(discordClient) {
                             channel.id === config.lobby_channel_id;
 
           if (isVisible) {
-            // Visible channels: unverified CAN see + read history, but CAN'T send on verification channel
+            // Visible channels: @everyone and unverified CAN see + read history, but CAN'T send on verification channel
+            await channel.permissionOverwrites.edit(guild.roles.everyone, {
+              ViewChannel: true,
+              ReadMessageHistory: true,
+              SendMessages: channel.id === config.verification_channel_id ? false : null
+            });
+
             await channel.permissionOverwrites.edit(unverifiedRole, {
               ViewChannel: true,
               ReadMessageHistory: true,
