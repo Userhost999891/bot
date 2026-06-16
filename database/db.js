@@ -61,10 +61,13 @@ async function getPool() {
         verification_channel_id VARCHAR(20),
         verified_role_name VARCHAR(100) DEFAULT 'Zweryfikowany',
         unverified_role_name VARCHAR(100) DEFAULT 'Niezweryfikowany',
+        verified_role_id VARCHAR(20) DEFAULT NULL,
+        unverified_role_id VARCHAR(20) DEFAULT NULL,
         visible_channels TEXT,
         verification_message_id VARCHAR(20),
         boost_channel_id VARCHAR(20),
-        reward_bypass_ids TEXT DEFAULT NULL
+        reward_bypass_ids TEXT DEFAULT NULL,
+        lobby_channel_id VARCHAR(20) DEFAULT NULL
       )
     `);
     try {
@@ -91,6 +94,18 @@ async function getPool() {
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
+    try {
+      await pool.execute(`
+        ALTER TABLE guild_config ADD COLUMN verified_role_id VARCHAR(20) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę verified_role_id do guild_config.');
+    } catch (e) {}
+    try {
+      await pool.execute(`
+        ALTER TABLE guild_config ADD COLUMN unverified_role_id VARCHAR(20) DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę unverified_role_id do guild_config.');
+    } catch (e) {}
     try {
       await pool.execute(`
         ALTER TABLE rewards_pending DROP INDEX unique_player
@@ -257,11 +272,16 @@ async function setConfig(guildId, config) {
     const boostChannel = config.boost_channel_id !== undefined ? (config.boost_channel_id || null) : existing.boost_channel_id;
     const rewardBypassIds = config.reward_bypass_ids !== undefined ? (config.reward_bypass_ids || null) : existing.reward_bypass_ids;
     const lobbyChannel = config.lobby_channel_id !== undefined ? (config.lobby_channel_id || null) : existing.lobby_channel_id;
+    const verifiedRoleId = config.verified_role_id !== undefined ? (config.verified_role_id || null) : existing.verified_role_id;
+    const unverifiedRoleId = config.unverified_role_id !== undefined ? (config.unverified_role_id || null) : existing.unverified_role_id;
+
     await p.execute(`
       UPDATE guild_config SET
         verification_channel_id = COALESCE(?, verification_channel_id),
         verified_role_name = COALESCE(?, verified_role_name),
         unverified_role_name = COALESCE(?, unverified_role_name),
+        verified_role_id = ?,
+        unverified_role_id = ?,
         visible_channels = COALESCE(?, visible_channels),
         verification_message_id = COALESCE(?, verification_message_id),
         boost_channel_id = ?,
@@ -272,6 +292,8 @@ async function setConfig(guildId, config) {
       config.verification_channel_id || null,
       config.verified_role_name || null,
       config.unverified_role_name || null,
+      verifiedRoleId,
+      unverifiedRoleId,
       config.visible_channels ? channelsStr : null,
       config.verification_message_id || null,
       boostChannel,
@@ -281,13 +303,15 @@ async function setConfig(guildId, config) {
     ]);
   } else {
     await p.execute(`
-      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, visible_channels, verification_message_id, boost_channel_id, reward_bypass_ids, lobby_channel_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO guild_config (guild_id, verification_channel_id, verified_role_name, unverified_role_name, verified_role_id, unverified_role_id, visible_channels, verification_message_id, boost_channel_id, reward_bypass_ids, lobby_channel_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       guildId,
       config.verification_channel_id || null,
       config.verified_role_name || 'Zweryfikowany',
       config.unverified_role_name || 'Niezweryfikowany',
+      config.verified_role_id || null,
+      config.unverified_role_id || null,
       channelsStr,
       config.verification_message_id || null,
       config.boost_channel_id || null,

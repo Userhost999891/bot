@@ -15,10 +15,12 @@ async function handleVerification(interaction, guild) {
 
   const normalize = (str) => str.toLowerCase().replace(/[^a-zżółćęśąźń0-9]/gi, '');
   
-  const verifiedRole = guild.roles.cache.find(r => {
-    const norm = normalize(r.name);
-    return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
-  });
+  const verifiedRole = guild.roles.cache.get(config.verified_role_id) || 
+                       guild.roles.cache.find(r => r.name === config.verified_role_name) ||
+                       guild.roles.cache.find(r => {
+                         const norm = normalize(r.name);
+                         return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
+                       });
 
   if (!verifiedRole) {
     return interaction.reply({ 
@@ -47,14 +49,18 @@ async function assignVerifiedRole(interaction, guild) {
 
   const normalize = (str) => str.toLowerCase().replace(/[^a-zżółćęśąźń0-9]/gi, '');
   
-  const verifiedRole = guild.roles.cache.find(r => {
-    const norm = normalize(r.name);
-    return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
-  });
-  const unverifiedRole = guild.roles.cache.find(r => {
-    const norm = normalize(r.name);
-    return norm.includes('niezweryfikowan');
-  });
+  const verifiedRole = guild.roles.cache.get(config.verified_role_id) || 
+                       guild.roles.cache.find(r => r.name === config.verified_role_name) ||
+                       guild.roles.cache.find(r => {
+                         const norm = normalize(r.name);
+                         return norm.includes('zweryfikowan') && !norm.includes('niezweryfikowan');
+                       });
+  const unverifiedRole = guild.roles.cache.get(config.unverified_role_id) || 
+                         guild.roles.cache.find(r => r.name === config.unverified_role_name) ||
+                         guild.roles.cache.find(r => {
+                           const norm = normalize(r.name);
+                           return norm.includes('niezweryfikowan');
+                         });
 
   if (!verifiedRole) {
     return false; // Error will be handled by interactionCreate.js

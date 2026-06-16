@@ -144,6 +144,8 @@ module.exports = function(discordClient) {
       verification_channel_id: null,
       verified_role_name: 'Zweryfikowany',
       unverified_role_name: 'Niezweryfikowany',
+      verified_role_id: null,
+      unverified_role_id: null,
       visible_channels: [],
       boost_channel_id: null,
       lobby_channel_id: null
@@ -153,12 +155,14 @@ module.exports = function(discordClient) {
   // Save verification config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
     try {
-      const { verification_channel_id, verified_role_name, unverified_role_name, visible_channels, boost_channel_id, lobby_channel_id } = req.body;
+      const { verification_channel_id, verified_role_name, unverified_role_name, verified_role_id, unverified_role_id, visible_channels, boost_channel_id, lobby_channel_id } = req.body;
 
       await setConfig(req.params.id, {
         verification_channel_id,
         verified_role_name,
         unverified_role_name,
+        verified_role_id: verified_role_id || null,
+        unverified_role_id: unverified_role_id || null,
         visible_channels: visible_channels || [],
         boost_channel_id: boost_channel_id || null,
         lobby_channel_id: lobby_channel_id || null
@@ -209,17 +213,29 @@ module.exports = function(discordClient) {
         updated.push(unverifiedName);
       }
 
+      // Save role IDs in config immediately
+      await setConfig(req.params.id, {
+        verified_role_id: verifiedRole.id,
+        unverified_role_id: unverifiedRole.id
+      });
+
       const messages = [];
       if (created.length) messages.push(`Utworzono role: ${created.join(', ')}`);
       if (updated.length) messages.push(`Zaktualizowano role: ${updated.join(', ')}`);
-      res.json({ success: true, created, message: messages.join('. ') || 'Role już istnieją!' });
+      res.json({
+        success: true,
+        created,
+        verified_role_id: verifiedRole.id,
+        unverified_role_id: unverifiedRole.id,
+        message: messages.join('. ') || 'Role już istnieją!'
+      });
     } catch (error) {
       console.error('Error creating roles:', error);
       res.status(500).json({ error: 'Nie można utworzyć ról. Sprawdź uprawnienia bota.' });
     }
   });
 
-  // Setup channel permissions
+  // Setup channel permissions (non-destructive — only adds per-channel overrides)
   router.post('/guild/:id/setup-permissions', authMiddleware, async (req, res) => {
     const guild = discordClient.guilds.cache.get(req.params.id);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
@@ -227,8 +243,8 @@ module.exports = function(discordClient) {
     const config = await getConfig(req.params.id);
     if (!config) return res.status(400).json({ error: 'Brak konfiguracji' });
 
-    const unverifiedRole = guild.roles.cache.find(r => r.name === config.unverified_role_name);
-    const verifiedRole = guild.roles.cache.find(r => r.name === config.verified_role_name);
+    const unverifiedRole = guild.roles.cache.get(config.unverified_role_id) || guild.roles.cache.find(r => r.name === config.unverified_role_name);
+    const verifiedRole = guild.roles.cache.get(config.verified_role_id) || guild.roles.cache.find(r => r.name === config.verified_role_name);
 
     if (!unverifiedRole || !verifiedRole) {
       return res.status(400).json({ error: 'Najpierw utwórz role!' });
@@ -237,47 +253,47 @@ module.exports = function(discordClient) {
     try {
       const visibleChannels = config.visible_channels || [];
 
-      const everyonePerms = new PermissionsBitField(guild.roles.everyone.permissions.bitfield);
-      everyonePerms.remove('ViewChannel');
-      await guild.roles.everyone.setPermissions(everyonePerms.bitfield, 'System weryfikacji - ukrycie kanałów');
-
-      const verifiedPerms = new PermissionsBitField(verifiedRole.permissions.bitfield);
-      verifiedPerms.add('ViewChannel');
-      verifiedPerms.add('SendMessages');
-      verifiedPerms.add('ReadMessageHistory');
-      verifiedPerms.add('Connect');
-      verifiedPerms.add('Speak');
-      await verifiedRole.setPermissions(verifiedPerms.bitfield, 'System weryfikacji - dostęp po weryfikacji');
-
-      await unverifiedRole.setPermissions([], 'System weryfikacji - brak uprawnień');
-
       let processed = 0;
       let errors = 0;
 
       for (const [, channel] of guild.channels.cache) {
+        // Skip threads and category channels
         if (channel.isThread && channel.isThread()) continue;
 
         try {
-          const isVisible = visibleChannels.includes(channel.id) || 
-                            channel.id === config.verification_channel_id || 
+          const isVisible = visibleChannels.includes(channel.id) ||
+                            channel.id === config.verification_channel_id ||
                             channel.id === config.lobby_channel_id;
 
           if (isVisible) {
-            await channel.permissionOverwrites.edit(guild.roles.everyone, {
-              ViewChannel: true,
-              ReadMessageHistory: true,
-              SendMessages: channel.id === config.verification_channel_id ? false : null
-            });
+            // Visible channels: unverified CAN see + read history, but CAN'T send on verification channel
             await channel.permissionOverwrites.edit(unverifiedRole, {
               ViewChannel: true,
               ReadMessageHistory: true,
               SendMessages: channel.id === config.verification_channel_id ? false : null
             });
+
+            // Verified users always get full access to visible channels
+            await channel.permissionOverwrites.edit(verifiedRole, {
+              ViewChannel: true,
+              ReadMessageHistory: true,
+              SendMessages: true
+            });
+
             processed++;
           } else {
+            // Hidden channels: unverified CANNOT see them at all
             await channel.permissionOverwrites.edit(unverifiedRole, {
               ViewChannel: false
             });
+
+            // Verified users CAN see hidden channels
+            await channel.permissionOverwrites.edit(verifiedRole, {
+              ViewChannel: true,
+              ReadMessageHistory: true,
+              SendMessages: true
+            });
+
             processed++;
           }
         } catch (channelError) {
@@ -288,7 +304,7 @@ module.exports = function(discordClient) {
 
       res.json({
         success: true,
-        message: `Gotowe! ${processed} kanałów ustawionych jako widoczne.${errors ? ` ${errors} błędów.` : ''}`
+        message: `Gotowe! Przetworzono ${processed} kanałów.${errors ? ` ${errors} błędów.` : ''} Istniejące uprawnienia zostały zachowane.`
       });
     } catch (error) {
       console.error('Error setting permissions:', error);

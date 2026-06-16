@@ -15,14 +15,14 @@ module.exports = {
     const config = await getConfig(member.guild.id);
     if (!config) return;
 
-    const unverifiedRole = member.guild.roles.cache.find(r => r.name === config.unverified_role_name);
+    const unverifiedRole = member.guild.roles.cache.get(config.unverified_role_id) || member.guild.roles.cache.find(r => r.name === config.unverified_role_name);
     if (unverifiedRole) {
       setTimeout(async () => {
         try {
           const freshMember = await member.guild.members.fetch(member.user.id);
 
-          // Remove other roles to prevent bypassing verification
-          const rolesToRemove = freshMember.roles.cache.filter(r => r.name !== '@everyone' && r.name !== config.unverified_role_name);
+          // Remove other roles to prevent bypassing verification (comparing by ID is name-change proof)
+          const rolesToRemove = freshMember.roles.cache.filter(r => r.name !== '@everyone' && r.id !== unverifiedRole.id);
 
           for (const [id, role] of rolesToRemove) {
             await freshMember.roles.remove(role, 'Automatyczne usunięcie ról przed weryfikacją');

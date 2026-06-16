@@ -57,14 +57,14 @@ module.exports = {
       let keepVerified = null;
       let keepUnverified = null;
 
-      async function deduplicateRoles(roles, exactName, label) {
+      async function deduplicateRoles(roles, exactName, label, preferredId) {
         if (roles.size === 0) {
           log.push(`Rola "${label}": BRAK`);
           return null;
         }
 
         const sorted = [...roles.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-        let keep = sorted.find(r => r.name === exactName) || sorted[0];
+        let keep = (preferredId && sorted.find(r => r.id === preferredId)) || sorted.find(r => r.name === exactName) || sorted[0];
 
         if (roles.size === 1) {
           log.push(`Rola "${label}": OK ("${keep.name}")`);
@@ -90,8 +90,8 @@ module.exports = {
         return keep;
       }
 
-      keepVerified = await deduplicateRoles(verifiedRoles, verifiedName, verifiedName);
-      keepUnverified = await deduplicateRoles(unverifiedRoles, unverifiedName, unverifiedName);
+      keepVerified = await deduplicateRoles(verifiedRoles, verifiedName, verifiedName, config.verified_role_id);
+      keepUnverified = await deduplicateRoles(unverifiedRoles, unverifiedName, unverifiedName, config.unverified_role_id);
 
       // =============================================
       // PHASE 3: Summary

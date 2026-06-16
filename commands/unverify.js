@@ -15,12 +15,14 @@ module.exports = {
 
   async execute(interaction) {
     const config = await getConfig(interaction.guild.id);
-    if (!config || !config.unverified_role_name || !config.verified_role_name) {
+    if (!config || (!config.unverified_role_name && !config.unverified_role_id) || (!config.verified_role_name && !config.verified_role_id)) {
       return interaction.reply({ content: '❌〢System nie jest w pełni skonfigurowany.', ephemeral: true });
     }
 
-    const unverifiedRole = interaction.guild.roles.cache.find(r => r.name === config.unverified_role_name);
-    const verifiedRole = interaction.guild.roles.cache.find(r => r.name === config.verified_role_name);
+    const unverifiedRole = interaction.guild.roles.cache.get(config.unverified_role_id) || 
+                           interaction.guild.roles.cache.find(r => r.name === config.unverified_role_name);
+    const verifiedRole = interaction.guild.roles.cache.get(config.verified_role_id) || 
+                         interaction.guild.roles.cache.find(r => r.name === config.verified_role_name);
 
     if (!unverifiedRole || !verifiedRole) {
       return interaction.reply({ content: '❌〢Role weryfikacji nie istnieją w konfiguracji serwera.', ephemeral: true });

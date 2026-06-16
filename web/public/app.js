@@ -345,7 +345,7 @@ function setupNavigation() {
           verifiedSelect.innerHTML = '<option value="">-- Wybierz rolę --</option>';
           roles.forEach(r => {
             const opt = document.createElement('option');
-            opt.value = r.name;
+            opt.value = r.id;
             opt.textContent = r.name;
             verifiedSelect.appendChild(opt);
           });
@@ -355,7 +355,7 @@ function setupNavigation() {
           unverifiedSelect.innerHTML = '<option value="">-- Wybierz rolę --</option>';
           roles.forEach(r => {
             const opt = document.createElement('option');
-            opt.value = r.name;
+            opt.value = r.id;
             opt.textContent = r.name;
             unverifiedSelect.appendChild(opt);
           });
@@ -371,8 +371,23 @@ function setupNavigation() {
       const res = await fetch(`/api/guild/${selectedGuildId}/config`);
       const config = await res.json();
       if (config.verification_channel_id) $('verification-channel').value = config.verification_channel_id;
-      if (config.verified_role_name) $('verified-role-name').value = config.verified_role_name;
-      if (config.unverified_role_name) $('unverified-role-name').value = config.unverified_role_name;
+
+      if (config.verified_role_id) {
+        $('verified-role-name').value = config.verified_role_id;
+      } else if (config.verified_role_name) {
+        const options = Array.from($('verified-role-name').options);
+        const match = options.find(opt => opt.textContent === config.verified_role_name);
+        if (match) $('verified-role-name').value = match.value;
+      }
+
+      if (config.unverified_role_id) {
+        $('unverified-role-name').value = config.unverified_role_id;
+      } else if (config.unverified_role_name) {
+        const options = Array.from($('unverified-role-name').options);
+        const match = options.find(opt => opt.textContent === config.unverified_role_name);
+        if (match) $('unverified-role-name').value = match.value;
+      }
+
       const visible = config.visible_channels || [];
       document.querySelectorAll('#visible-channels input[type="checkbox"]').forEach(cb => {
         if (visible.includes(cb.value)) {
@@ -385,20 +400,35 @@ function setupNavigation() {
 
   async function saveVerificationConfig() {
     const verificationChannelId = $('verification-channel').value;
-    const verifiedRoleName = $('verified-role-name').value.trim();
-    const unverifiedRoleName = $('unverified-role-name').value.trim();
+    
+    const verifiedSelect = $('verified-role-name');
+    const unverifiedSelect = $('unverified-role-name');
+    
+    const verifiedRoleId = verifiedSelect.value;
+    const unverifiedRoleId = unverifiedSelect.value;
+    
+    const verifiedRoleName = verifiedSelect.selectedIndex >= 0 ? verifiedSelect.options[verifiedSelect.selectedIndex].text : '';
+    const unverifiedRoleName = unverifiedSelect.selectedIndex >= 0 ? unverifiedSelect.options[unverifiedSelect.selectedIndex].text : '';
+    
     const visibleChannels = [];
     document.querySelectorAll('#visible-channels input:checked').forEach(cb => visibleChannels.push(cb.value));
 
     if (!verificationChannelId) return showSectionStatus('ver', 'Wybierz kanał weryfikacji!', 'error');
-    if (!verifiedRoleName || !unverifiedRoleName) return showSectionStatus('ver', 'Wybierz role!', 'error');
+    if (!verifiedRoleId || !unverifiedRoleId) return showSectionStatus('ver', 'Wybierz role!', 'error');
 
     try {
       disableButtons(true);
       const res = await fetch(`/api/guild/${selectedGuildId}/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verification_channel_id: verificationChannelId, verified_role_name: verifiedRoleName, unverified_role_name: unverifiedRoleName, visible_channels: visibleChannels })
+        body: JSON.stringify({ 
+          verification_channel_id: verificationChannelId, 
+          verified_role_name: verifiedRoleName, 
+          unverified_role_name: unverifiedRoleName,
+          verified_role_id: verifiedRoleId,
+          unverified_role_id: unverifiedRoleId,
+          visible_channels: visibleChannels 
+        })
       });
       const data = await res.json();
       showSectionStatus('ver', data.message || data.error || 'Zapisano!', data.success ? 'success' : 'error');
@@ -412,6 +442,10 @@ function setupNavigation() {
       const res = await fetch(`/api/guild/${selectedGuildId}/create-roles`, { method: 'POST' });
       const data = await res.json();
       showSectionStatus('ver', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success) {
+        await loadRoles();
+        await loadVerificationConfig();
+      }
     } catch (e) { showSectionStatus('ver', 'Błąd tworzenia ról', 'error'); }
     finally { disableButtons(false); }
   }
