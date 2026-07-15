@@ -179,6 +179,14 @@ async function getPool() {
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
+    try {
+      await pool.execute(`
+        ALTER TABLE ticket_config ADD COLUMN support_role_ids TEXT DEFAULT NULL
+      `);
+      console.log('✅ Migracja: Dodano kolumnę support_role_ids do ticket_config.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
 
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS pending_commands (
@@ -366,29 +374,39 @@ async function getTicketConfig(guildId) {
 async function setTicketConfig(guildId, config) {
   const p = await getPool();
   const existing = await getTicketConfig(guildId);
+
+  // support_role_ids przechowujemy jako JSON-owa tablica ID ról
+  const roleIdsJson = config.support_role_ids !== undefined
+    ? JSON.stringify(Array.isArray(config.support_role_ids) ? config.support_role_ids : [])
+    : undefined;
+
   if (existing) {
+    // Nadpisujemy tylko pola jawnie przekazane — undefined zachowuje starą wartość,
+    // a pusta wartość (null/'') faktycznie czyści pole (COALESCE na to nie pozwalał)
+    const ticketChannelId = config.ticket_channel_id !== undefined ? (config.ticket_channel_id || null) : existing.ticket_channel_id;
+    const supportRoleId = config.support_role_id !== undefined ? (config.support_role_id || null) : existing.support_role_id;
+    const supportRoleIds = roleIdsJson !== undefined ? roleIdsJson : existing.support_role_ids;
+    const ticketMessageId = config.ticket_message_id !== undefined ? (config.ticket_message_id || null) : existing.ticket_message_id;
+    const logChannelId = config.log_channel_id !== undefined ? (config.log_channel_id || null) : existing.log_channel_id;
+
     await p.execute(`
       UPDATE ticket_config SET
-        ticket_channel_id = COALESCE(?, ticket_channel_id),
-        support_role_id = COALESCE(?, support_role_id),
-        ticket_message_id = COALESCE(?, ticket_message_id),
-        log_channel_id = COALESCE(?, log_channel_id)
+        ticket_channel_id = ?,
+        support_role_id = ?,
+        support_role_ids = ?,
+        ticket_message_id = ?,
+        log_channel_id = ?
       WHERE guild_id = ?
-    `, [
-      config.ticket_channel_id || null,
-      config.support_role_id || null,
-      config.ticket_message_id || null,
-      config.log_channel_id || null,
-      guildId
-    ]);
+    `, [ticketChannelId, supportRoleId, supportRoleIds, ticketMessageId, logChannelId, guildId]);
   } else {
     await p.execute(`
-      INSERT INTO ticket_config (guild_id, ticket_channel_id, support_role_id, ticket_message_id, log_channel_id)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO ticket_config (guild_id, ticket_channel_id, support_role_id, support_role_ids, ticket_message_id, log_channel_id)
+      VALUES (?, ?, ?, ?, ?, ?)
     `, [
       guildId,
       config.ticket_channel_id || null,
       config.support_role_id || null,
+      roleIdsJson || null,
       config.ticket_message_id || null,
       config.log_channel_id || null
     ]);
@@ -499,6 +517,12 @@ async function claimTicket(channelId, userId) {
 async function deleteActiveTicket(channelId) {
   const p = await getPool();
   await p.execute('DELETE FROM active_tickets WHERE channel_id = ?', [channelId]);
+}
+
+async function getActiveTicketChannelIds(guildId) {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT channel_id FROM active_tickets WHERE guild_id = ?', [guildId]);
+  return rows.map(r => r.channel_id);
 }
 
 // =====================
@@ -725,7 +749,7 @@ module.exports = {
   // Tickets
   getTicketConfig, setTicketConfig, getNextTicketNumber,
   getTicketCategories, addTicketCategory, updateTicketCategory, deleteTicketCategory,
-  createActiveTicket, getActiveTicket, countActiveTickets, countUserActiveTickets, getLastUserTicketTime, claimTicket, deleteActiveTicket,
+  createActiveTicket, getActiveTicket, countActiveTickets, countUserActiveTickets, getLastUserTicketTime, claimTicket, deleteActiveTicket, getActiveTicketChannelIds,
   // Announcements
   getAnnouncementsConfig, setAnnouncementsConfig,
   // Tic-Tac-Toe

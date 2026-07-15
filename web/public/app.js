@@ -583,9 +583,15 @@ function setupNavigation() {
       const res = await fetch(`/api/tickets/guild/${selectedGuildId}/config`);
       const config = await res.json();
       if (config.ticket_channel_id) $('ticket-channel').value = config.ticket_channel_id;
-      if (config.support_role_id) {
-        $('ticket-support-role').value = config.support_role_id;
-      }
+
+      const roleIds = Array.isArray(config.support_role_ids) && config.support_role_ids.length
+        ? config.support_role_ids
+        : (config.support_role_id ? [config.support_role_id] : []);
+      document.querySelectorAll('#ticket-support-roles input[type="checkbox"]').forEach(cb => {
+        const on = roleIds.includes(cb.value);
+        cb.checked = on;
+        cb.closest('.channel-checkbox').classList.toggle('checked', on);
+      });
     } catch (e) { console.error('Error loading ticket config:', e); }
   }
 
@@ -609,14 +615,18 @@ function setupNavigation() {
 
       const roles = await res.json();
       if (!Array.isArray(roles)) throw new Error(roles.error || 'Server returned invalid roles data');
-      const select = $('ticket-support-role');
-      select.innerHTML = '<option value="">-- Wybierz rolę --</option>';
+      const container = $('ticket-support-roles');
+      container.innerHTML = '';
       roles.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        opt.style.color = r.color !== '#000000' ? r.color : '';
-        select.appendChild(opt);
+        const label = document.createElement('label');
+        label.className = 'channel-checkbox';
+        label.innerHTML = `<input type="checkbox" value="${r.id}"><span></span>`;
+        const span = label.querySelector('span');
+        span.textContent = r.name;
+        if (r.color && r.color !== '#000000') span.style.color = r.color;
+        const checkbox = label.querySelector('input');
+        checkbox.addEventListener('change', () => label.classList.toggle('checked', checkbox.checked));
+        container.appendChild(label);
       });
     } catch (e) {
       console.error('Error loading roles:', e);
@@ -680,14 +690,15 @@ function setupNavigation() {
 
   async function saveTicketConfig() {
     const ticket_channel_id = $('ticket-channel').value;
-    const support_role_id = $('ticket-support-role').value;
+    const support_role_ids = [];
+    document.querySelectorAll('#ticket-support-roles input:checked').forEach(cb => support_role_ids.push(cb.value));
     if (!ticket_channel_id) return showSectionStatus('tick', 'Wybierz kanał ticketów!', 'error');
     try {
       disableButtons(true);
       const res = await fetch(`/api/tickets/guild/${selectedGuildId}/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticket_channel_id, support_role_id })
+        body: JSON.stringify({ ticket_channel_id, support_role_ids })
       });
       const data = await res.json();
       showSectionStatus('tick', data.message || data.error, data.success ? 'success' : 'error');

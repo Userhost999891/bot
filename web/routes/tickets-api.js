@@ -19,24 +19,48 @@ module.exports = function(discordClient) {
   // Get ticket config
   router.get('/guild/:id/config', authMiddleware, async (req, res) => {
     const config = await getTicketConfig(req.params.id);
-    res.json(config || {
-      guild_id: req.params.id,
-      ticket_channel_id: null,
-      support_role_id: null,
-      log_channel_id: null
-    });
+    if (!config) {
+      return res.json({
+        guild_id: req.params.id,
+        ticket_channel_id: null,
+        support_role_id: null,
+        support_role_ids: [],
+        log_channel_id: null
+      });
+    }
+
+    // Zwracamy support_role_ids zawsze jako tablicę (fallback na starą pojedynczą rolę)
+    let roleIds = [];
+    if (config.support_role_ids) {
+      try {
+        const parsed = JSON.parse(config.support_role_ids);
+        if (Array.isArray(parsed)) roleIds = parsed;
+      } catch (e) {}
+    }
+    if (roleIds.length === 0 && config.support_role_id) {
+      roleIds = [config.support_role_id];
+    }
+    res.json({ ...config, support_role_ids: roleIds });
   });
 
   // Save ticket config
   router.post('/guild/:id/config', authMiddleware, async (req, res) => {
-    const { ticket_channel_id, support_role_id, log_channel_id } = req.body;
+    const { ticket_channel_id, support_role_id, support_role_ids, log_channel_id } = req.body;
     try {
+      let roleIds;
+      if (support_role_ids !== undefined) {
+        roleIds = (Array.isArray(support_role_ids) ? support_role_ids : [])
+          .filter(id => typeof id === 'string' && /^\d{5,25}$/.test(id));
+      }
+
       await setTicketConfig(req.params.id, {
         ticket_channel_id,
-        support_role_id,
+        // Legacy pole trzymamy zsynchronizowane z pierwszą zaznaczoną rolą
+        support_role_id: roleIds !== undefined ? (roleIds[0] || null) : support_role_id,
+        support_role_ids: roleIds,
         log_channel_id
       });
-      res.json({ success: true });
+      res.json({ success: true, message: 'Konfiguracja ticketów zapisana!' });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'DB Error: ' + e.message });

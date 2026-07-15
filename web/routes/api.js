@@ -1,8 +1,9 @@
 // API routes for verification + guild management (ported + extended)
 const express = require('express');
-const { 
-  getConfig, setConfig, 
+const {
+  getConfig, setConfig,
   getTicketConfig, setTicketConfig, getTicketCategories,
+  getActiveTicketChannelIds,
   getAnnouncementsConfig, setAnnouncementsConfig,
   getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
   getTTTConfig, setTTTConfig
@@ -252,6 +253,7 @@ module.exports = function(discordClient) {
 
     try {
       const visibleChannels = config.visible_channels || [];
+      const ticketChannelIds = await getActiveTicketChannelIds(req.params.id);
 
       let processed = 0;
       let errors = 0;
@@ -259,6 +261,10 @@ module.exports = function(discordClient) {
       for (const [, channel] of guild.channels.cache) {
         // Skip threads and category channels
         if (channel.isThread && channel.isThread()) continue;
+
+        // Skip open ticket channels — their permissions are managed by the ticket system
+        // (otherwise verified role would gain access to every open ticket)
+        if (ticketChannelIds.includes(channel.id)) continue;
 
         try {
           const isVisible = visibleChannels.includes(channel.id) ||

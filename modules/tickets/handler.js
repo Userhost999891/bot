@@ -209,10 +209,26 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
       }
     ];
 
-    // Add support role if configured
-    if (ticketConfig && ticketConfig.support_role_id) {
+    // Add support roles if configured (multi-role list with fallback to legacy single role)
+    let supportRoleIds = [];
+    if (ticketConfig && ticketConfig.support_role_ids) {
+      try {
+        const parsed = JSON.parse(ticketConfig.support_role_ids);
+        if (Array.isArray(parsed)) supportRoleIds = parsed;
+      } catch (e) {}
+    }
+    if (supportRoleIds.length === 0 && ticketConfig && ticketConfig.support_role_id) {
+      supportRoleIds = [ticketConfig.support_role_id];
+    }
+
+    for (const roleId of [...new Set(supportRoleIds)]) {
+      // Overwrite dla usuniętej roli wywala całe guild.channels.create — pomijamy nieistniejące
+      if (!roleId || !guild.roles.cache.has(roleId)) {
+        console.warn(`⚠️ Ticket: pomijam nieistniejącą rolę supportu ${roleId} (gildia ${guild.id})`);
+        continue;
+      }
       permOverwrites.push({
-        id: ticketConfig.support_role_id,
+        id: roleId,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
