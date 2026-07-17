@@ -2,14 +2,13 @@
 const express = require('express');
 const { getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer, getConfig, setConfig, removeReward } = require('../../database/db');
 const { refreshChannelCache, setupRewardChannelPerms } = require('../../modules/rewards/handler');
-
-function authMiddleware(req, res, next) {
-  if (!req.session.user) return res.status(401).json({ error: 'Not authenticated' });
-  next();
-}
+const { authMiddleware, adminParamMiddleware } = require('./middleware');
 
 module.exports = function(discordClient) {
   const router = express.Router();
+
+  // Wszystkie endpointy per-serwer wymagają admina tego serwera
+  router.use('/guild/:id', authMiddleware, adminParamMiddleware);
 
   // Get all reward servers for a guild
   router.get('/guild/:id/servers', authMiddleware, async (req, res) => {

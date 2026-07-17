@@ -5,16 +5,13 @@ const {
   getTicketCategories, addTicketCategory, updateTicketCategory, deleteTicketCategory
 } = require('../../database/db');
 const { sendTicketPanel } = require('../../modules/tickets/handler');
-
-function authMiddleware(req, res, next) {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-}
+const { authMiddleware, adminParamMiddleware } = require('./middleware');
 
 module.exports = function(discordClient) {
   const router = express.Router();
+
+  // Wszystkie endpointy per-serwer wymagają admina tego serwera
+  router.use('/guild/:id', authMiddleware, adminParamMiddleware);
 
   // Get ticket config
   router.get('/guild/:id/config', authMiddleware, async (req, res) => {

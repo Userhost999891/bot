@@ -13,6 +13,46 @@ const {
 // Cooldown: 5 minutes per user
 const COOLDOWN_MS = 5 * 60 * 1000;
 const MAX_TICKETS_DEFAULT = 50;
+const MC_NICK_REGEX = /^[A-Za-z0-9_]{3,16}$/;
+
+/**
+ * Configured support role IDs (JSON list with legacy single-column fallback)
+ */
+function getSupportRoleIds(ticketConfig) {
+  if (!ticketConfig) return [];
+  let ids = [];
+  if (ticketConfig.support_role_ids) {
+    try {
+      const parsed = JSON.parse(ticketConfig.support_role_ids);
+      if (Array.isArray(parsed)) ids = parsed;
+    } catch (e) {}
+  }
+  if (ids.length === 0 && ticketConfig.support_role_id) {
+    ids = [ticketConfig.support_role_id];
+  }
+  return [...new Set(ids.filter(Boolean))];
+}
+
+/**
+ * Staff = administrator / manage guild, or any of the configured support roles
+ */
+function isTicketStaff(member, ticketConfig) {
+  if (!member) return false;
+  if (member.permissions.has(PermissionFlagsBits.Administrator) ||
+      member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+    return true;
+  }
+  return getSupportRoleIds(ticketConfig).some(roleId => member.roles.cache.has(roleId));
+}
+
+/**
+ * Reject an already-deferred interaction with an ephemeral message
+ * (removes the public "thinking..." placeholder)
+ */
+async function denyInteraction(interaction, message) {
+  try { await interaction.deleteReply(); } catch (e) {}
+  try { await interaction.followUp({ content: message, ephemeral: true }); } catch (e) {}
+}
 
 /**
  * Build and send the ticket panel embed with select menu
@@ -122,7 +162,12 @@ async function handleTicketModalSubmit(interaction) {
 
   const categoryId = interaction.customId.replace('ticket_modal_', '');
   const mcNick = interaction.fields.getTextInputValue('mc_nickname').trim();
-  
+
+  // Nick trafia później do komendy konsolowej (lp user <nick> ...) — musi mieć poprawny format
+  if (!MC_NICK_REGEX.test(mcNick)) {
+    return interaction.editReply({ content: '❌〢Wpisz poprawny nick Minecraft (3-16 znaków: litery, cyfry i _).' });
+  }
+
   let socialLink = null;
   let screenshotLink = null;
   try { socialLink = interaction.fields.getTextInputValue('social_link').trim(); } catch(e) {}
@@ -210,20 +255,9 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     ];
 
     // Add support roles if configured (multi-role list with fallback to legacy single role)
-    let supportRoleIds = [];
-    if (ticketConfig && ticketConfig.support_role_ids) {
-      try {
-        const parsed = JSON.parse(ticketConfig.support_role_ids);
-        if (Array.isArray(parsed)) supportRoleIds = parsed;
-      } catch (e) {}
-    }
-    if (supportRoleIds.length === 0 && ticketConfig && ticketConfig.support_role_id) {
-      supportRoleIds = [ticketConfig.support_role_id];
-    }
-
-    for (const roleId of [...new Set(supportRoleIds)]) {
+    for (const roleId of getSupportRoleIds(ticketConfig)) {
       // Overwrite dla usuniętej roli wywala całe guild.channels.create — pomijamy nieistniejące
-      if (!roleId || !guild.roles.cache.has(roleId)) {
+      if (!guild.roles.cache.has(roleId)) {
         console.warn(`⚠️ Ticket: pomijam nieistniejącą rolę supportu ${roleId} (gildia ${guild.id})`);
         continue;
       }
@@ -349,6 +383,12 @@ async function handleTicketClose(interaction) {
     return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
 
+  // Zamknąć może tylko autor ticketa albo administracja/support
+  const ticketConfig = await getTicketConfig(interaction.guild.id);
+  if (interaction.user.id !== ticket.user_id && !isTicketStaff(interaction.member, ticketConfig)) {
+    return denyInteraction(interaction, '⛔〢Ten ticket może zamknąć tylko jego autor lub administracja!');
+  }
+
   const closeEmbed = new EmbedBuilder()
     .setTitle('🔒〢Ticket Zamknięty')
     .setDescription(
@@ -381,13 +421,20 @@ async function handleTicketClaim(interaction) {
     return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
 
-  if (ticket.claimed_by) {
-    return interaction.editReply({
-      content: `📋〢Ten ticket jest już odebrany przez <@${ticket.claimed_by}>!`
-    });
+  // Odbierać tickety może tylko administracja/support — nie zwykły gracz ani autor ticketa
+  const ticketConfig = await getTicketConfig(interaction.guild.id);
+  if (!isTicketStaff(interaction.member, ticketConfig)) {
+    return denyInteraction(interaction, '⛔〢Tylko administracja może odbierać tickety!');
   }
 
-  await claimTicket(interaction.channel.id, interaction.user.id);
+  if (ticket.claimed_by) {
+    return denyInteraction(interaction, `📋〢Ten ticket jest już odebrany przez <@${ticket.claimed_by}>!`);
+  }
+
+  const claimed = await claimTicket(interaction.channel.id, interaction.user.id);
+  if (!claimed) {
+    return denyInteraction(interaction, '📋〢Ktoś właśnie odebrał ten ticket przed Tobą!');
+  }
 
   const claimEmbed = new EmbedBuilder()
     .setDescription(`📋〢${interaction.user} odebrał ten ticket.`)
@@ -407,8 +454,18 @@ async function handleTicketSetTworca(interaction) {
   if (!ticket) {
     return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
+
+  // KRYTYCZNE: rangę może nadać wyłącznie administracja/support — nigdy autor ticketa
+  const ticketConfig = await getTicketConfig(interaction.guild.id);
+  if (!isTicketStaff(interaction.member, ticketConfig)) {
+    return denyInteraction(interaction, '⛔〢Tylko administracja może nadać rangę TWÓRCA!');
+  }
+
   if (!ticket.mc_nick) {
     return interaction.editReply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!' });
+  }
+  if (!MC_NICK_REGEX.test(ticket.mc_nick)) {
+    return interaction.editReply({ content: '❌〢Nick w tym tickecie ma niepoprawny format — nadaj rangę ręcznie w grze.' });
   }
 
   const { addPendingCommand } = require('../../database/db');
@@ -436,8 +493,18 @@ async function handleTicketSetMedia(interaction) {
   if (!ticket) {
     return interaction.editReply({ content: '❌〢To nie jest kanał ticketa!' });
   }
+
+  // KRYTYCZNE: rangę może nadać wyłącznie administracja/support — nigdy autor ticketa
+  const ticketConfig = await getTicketConfig(interaction.guild.id);
+  if (!isTicketStaff(interaction.member, ticketConfig)) {
+    return denyInteraction(interaction, '⛔〢Tylko administracja może nadać rangę MEDIA!');
+  }
+
   if (!ticket.mc_nick) {
     return interaction.editReply({ content: '❌〢Brak nicku Minecraft skojarzonego z tym ticketem!' });
+  }
+  if (!MC_NICK_REGEX.test(ticket.mc_nick)) {
+    return interaction.editReply({ content: '❌〢Nick w tym tickecie ma niepoprawny format — nadaj rangę ręcznie w grze.' });
   }
 
   const { addPendingCommand } = require('../../database/db');

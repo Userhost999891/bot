@@ -511,7 +511,12 @@ async function getLastUserTicketTime(guildId, userId) {
 
 async function claimTicket(channelId, userId) {
   const p = await getPool();
-  await p.execute('UPDATE active_tickets SET claimed_by = ? WHERE channel_id = ?', [userId, channelId]);
+  // Warunek claimed_by IS NULL chroni przed równoczesnym odebraniem przez dwie osoby
+  const [result] = await p.execute(
+    'UPDATE active_tickets SET claimed_by = ? WHERE channel_id = ? AND claimed_by IS NULL',
+    [userId, channelId]
+  );
+  return result.affectedRows > 0;
 }
 
 async function deleteActiveTicket(channelId) {

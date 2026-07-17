@@ -9,33 +9,13 @@ const {
   getTTTConfig, setTTTConfig
 } = require('../../database/db');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
-
-
-function authMiddleware(req, res, next) {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-}
-
-async function adminParamMiddleware(req, res, next) {
-  const userGuilds = req.session?.user?.guilds || [];
-  const g = userGuilds.find(g => g.id === req.params.id);
-  if (!g) return res.status(403).json({ error: 'Brak uprawnień do tego serwera' });
-
-  let isAdmin = g.owner === true;
-  try {
-    if (!isAdmin && g.permissions) {
-      isAdmin = (BigInt(g.permissions) & 8n) === 8n;
-    }
-  } catch (e) {}
-
-  if (!isAdmin) return res.status(403).json({ error: 'Wymagane uprawnienia administratora' });
-  next();
-}
+const { authMiddleware, adminParamMiddleware } = require('./middleware');
 
 module.exports = function(discordClient) {
   const router = express.Router();
+
+  // Wszystkie endpointy per-serwer wymagają admina tego serwera
+  router.use('/guild/:id', authMiddleware, adminParamMiddleware);
 
   // Get guilds where bot is present AND user has admin perms
   router.get('/guilds', authMiddleware, async (req, res) => {
@@ -262,9 +242,14 @@ module.exports = function(discordClient) {
         // Skip threads and category channels
         if (channel.isThread && channel.isThread()) continue;
 
-        // Skip open ticket channels — their permissions are managed by the ticket system
-        // (otherwise verified role would gain access to every open ticket)
-        if (ticketChannelIds.includes(channel.id)) continue;
+        // Open ticket channels: permissions are managed by the ticket system.
+        // Remove verified/unverified overwrites left over by older sweeps
+        // (they made every verified member see other people's tickets), then skip.
+        if (ticketChannelIds.includes(channel.id)) {
+          await channel.permissionOverwrites.delete(verifiedRole).catch(() => {});
+          await channel.permissionOverwrites.delete(unverifiedRole).catch(() => {});
+          continue;
+        }
 
         try {
           const isVisible = visibleChannels.includes(channel.id) ||

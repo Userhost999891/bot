@@ -2,16 +2,13 @@
 const express = require('express');
 const { getAnnouncementsConfig, setAnnouncementsConfig } = require('../../database/db');
 const { sendAnnouncement } = require('../../modules/announcements/handler');
-
-function authMiddleware(req, res, next) {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-}
+const { authMiddleware, adminParamMiddleware } = require('./middleware');
 
 module.exports = function(discordClient) {
   const router = express.Router();
+
+  // Wszystkie endpointy per-serwer wymagają admina tego serwera
+  router.use('/guild/:id', authMiddleware, adminParamMiddleware);
 
   // Get config
   router.get('/guild/:id/config', authMiddleware, async (req, res) => {
