@@ -543,5 +543,6 @@ module.exports = {
   handleTicketClose,
   handleTicketClaim,
   handleTicketSetTworca,
-  handleTicketSetMedia
+  handleTicketSetMedia,
+  isTicketStaff
 };

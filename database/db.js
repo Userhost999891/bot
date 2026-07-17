@@ -519,6 +519,12 @@ async function claimTicket(channelId, userId) {
   return result.affectedRows > 0;
 }
 
+async function forceClaimTicket(channelId, userId) {
+  const p = await getPool();
+  // Wersja bez warunku — nadpisuje istniejący claim (komenda /force-odbierzticket)
+  await p.execute('UPDATE active_tickets SET claimed_by = ? WHERE channel_id = ?', [userId, channelId]);
+}
+
 async function deleteActiveTicket(channelId) {
   const p = await getPool();
   await p.execute('DELETE FROM active_tickets WHERE channel_id = ?', [channelId]);
@@ -754,7 +760,7 @@ module.exports = {
   // Tickets
   getTicketConfig, setTicketConfig, getNextTicketNumber,
   getTicketCategories, addTicketCategory, updateTicketCategory, deleteTicketCategory,
-  createActiveTicket, getActiveTicket, countActiveTickets, countUserActiveTickets, getLastUserTicketTime, claimTicket, deleteActiveTicket, getActiveTicketChannelIds,
+  createActiveTicket, getActiveTicket, countActiveTickets, countUserActiveTickets, getLastUserTicketTime, claimTicket, forceClaimTicket, deleteActiveTicket, getActiveTicketChannelIds,
   // Announcements
   getAnnouncementsConfig, setAnnouncementsConfig,
   // Tic-Tac-Toe
