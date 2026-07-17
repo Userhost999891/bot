@@ -7,7 +7,8 @@ const {
 const {
   getTicketConfig, getTicketCategories, getNextTicketNumber,
   createActiveTicket, getActiveTicket, claimTicket, deleteActiveTicket,
-  countActiveTickets, countUserActiveTickets, getLastUserTicketTime
+  countActiveTickets, countUserActiveTickets, getLastUserTicketTime,
+  getConfig
 } = require('../../database/db');
 
 // Cooldown: 5 minutes per user
@@ -255,7 +256,8 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     ];
 
     // Add support roles if configured (multi-role list with fallback to legacy single role)
-    for (const roleId of getSupportRoleIds(ticketConfig)) {
+    const supportRoleIds = getSupportRoleIds(ticketConfig);
+    for (const roleId of supportRoleIds) {
       // Overwrite dla usuniętej roli wywala całe guild.channels.create — pomijamy nieistniejące
       if (!guild.roles.cache.has(roleId)) {
         console.warn(`⚠️ Ticket: pomijam nieistniejącą rolę supportu ${roleId} (gildia ${guild.id})`);
@@ -270,6 +272,18 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
           PermissionFlagsBits.ManageMessages
         ]
       });
+    }
+
+    // Jawna blokada ról weryfikacyjnych wpisana już przy tworzeniu kanału —
+    // nawet gdyby coś kiedyś nadało tym rolom dostęp, ticket ma własny deny
+    const guildConfig = await getConfig(guild.id);
+    for (const roleId of [guildConfig?.verified_role_id, guildConfig?.unverified_role_id]) {
+      if (roleId && guild.roles.cache.has(roleId) && !supportRoleIds.includes(roleId)) {
+        permOverwrites.push({
+          id: roleId,
+          deny: [PermissionFlagsBits.ViewChannel]
+        });
+      }
     }
 
     // Bot itself
