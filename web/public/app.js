@@ -216,12 +216,13 @@ function setupNavigation() {
       const res = await fetch(`/api/guild/${selectedGuildId}/stats`);
       const stats = await res.json();
 
-      $('stat-members').textContent = stats.memberCount || '—';
-      $('stat-online').textContent = stats.online || '0';
-      $('stat-channels').textContent = stats.channels || '—';
-      $('stat-roles').textContent = stats.roles || '—';
-      $('stat-bots').textContent = stats.bots || '—';
-      $('stat-boosts').textContent = stats.boostCount || '0';
+      // Count-up animacja liczb (premium)
+      animateCount($('stat-members'), stats.memberCount);
+      animateCount($('stat-online'), stats.online);
+      animateCount($('stat-channels'), stats.channels);
+      animateCount($('stat-roles'), stats.roles);
+      animateCount($('stat-bots'), stats.bots);
+      animateCount($('stat-boosts'), stats.boostCount);
 
       if (stats.botAvatar) botAvatar = stats.botAvatar;
       if (stats.botName) botName = stats.botName;
@@ -231,13 +232,6 @@ function setupNavigation() {
       const nameEl = $('preview-bot-name');
       if (avatarEl && botAvatar) avatarEl.src = botAvatar;
       if (nameEl) nameEl.textContent = botName;
-
-      // Animate stat values
-      document.querySelectorAll('.stat-card').forEach((card, i) => {
-        card.style.animation = 'none';
-        card.offsetHeight;
-        card.style.animation = `sectionIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.06}s both`;
-      });
     } catch (e) {
       console.error('Error loading dashboard:', e);
     }
@@ -1621,6 +1615,45 @@ function setupNavigation() {
     return div.innerHTML;
   }
 
+  // Count-up animacja dla kafelków statystyk
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function animateCount(el, rawTarget) {
+    if (!el) return;
+    const target = parseInt(rawTarget, 10);
+    if (!Number.isFinite(target)) { el.textContent = (rawTarget === 0 || rawTarget === '0') ? '0' : '—'; return; }
+    if (prefersReducedMotion || target === 0) { el.textContent = target.toLocaleString('pl-PL'); return; }
+    const duration = 900;
+    const start = performance.now();
+    const from = 0;
+    function tick(now) {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      el.textContent = Math.round(from + (target - from) * eased).toLocaleString('pl-PL');
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // Efekt ripple na przyciskach i kartach serwerów
+  function setupRipple() {
+    if (prefersReducedMotion) return;
+    document.addEventListener('click', (e) => {
+      const el = e.target.closest('.action-btn, .server-card');
+      if (!el || el.disabled) return;
+      const rect = el.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      const prevPosition = getComputedStyle(el).position;
+      if (prevPosition === 'static') el.style.position = 'relative';
+      el.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 650);
+    });
+  }
+
   // =============================
   // BACKUP
   // =============================
@@ -1896,6 +1929,7 @@ function setupNavigation() {
     }
 
     setupAnnouncementsAutocomplete();
+    setupRipple();
     init();
   });
 })();
