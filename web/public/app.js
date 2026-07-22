@@ -1696,6 +1696,7 @@ function setupNavigation() {
               <span>👤 ${author}</span>
               <span>🎭 ${b.role_count} ról</span>
               <span>📁 ${b.channel_count} kanałów</span>
+              <span>👥 ${b.member_count || 0} członków</span>
             </div>
           </div>
           <div class="backup-card-actions">

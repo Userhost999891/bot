@@ -40,16 +40,18 @@ module.exports = function(discordClient) {
       const name = (rawName || `Backup ${new Date().toLocaleString('pl-PL')}`).slice(0, 120);
 
       const data = await createBackup(guild);
+      const memberCount = Array.isArray(data.members) ? data.members.length : 0;
       const id = await createBackupRecord(req.params.id, name, data, {
         createdBy: req.session.user?.id,
         createdByTag: req.session.user?.username,
         roleCount: data.roles.length,
-        channelCount: data.channels.length
+        channelCount: data.channels.length,
+        memberCount
       });
 
       res.json({
         success: true,
-        message: `Backup utworzony! Zapisano ${data.roles.length} ról i ${data.channels.length} kanałów.`,
+        message: `Backup utworzony! Zapisano ${data.roles.length} ról, ${data.channels.length} kanałów i role ${memberCount} członków.`,
         id
       });
     } catch (e) {
@@ -94,7 +96,8 @@ module.exports = function(discordClient) {
         createdBy: req.session.user?.id,
         createdByTag: req.session.user?.username,
         roleCount: payload.roles.length,
-        channelCount: payload.channels.length
+        channelCount: payload.channels.length,
+        memberCount: Array.isArray(payload.members) ? payload.members.length : 0
       });
 
       res.json({ success: true, message: `Backup "${name}" wgrany do panelu!`, id });
@@ -140,6 +143,7 @@ function buildRestoreMessage(s) {
   const parts = [];
   parts.push(`Role: +${s.rolesCreated} nowych, ${s.rolesUpdated} zaktualizowanych`);
   parts.push(`Kanały: +${s.channelsCreated} nowych, ${s.channelsUpdated} zaktualizowanych`);
+  if (s.membersUpdated || s.membersSkipped) parts.push(`Członkowie: ${s.membersUpdated} z przywróconymi rolami`);
   if (s.deleted) parts.push(`usunięto ${s.deleted} nadmiarowych`);
   if (s.errors.length) parts.push(`${s.errors.length} błędów`);
   return `Przywracanie zakończone. ${parts.join(' • ')}.`;

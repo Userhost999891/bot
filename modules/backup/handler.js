@@ -1,7 +1,7 @@
 // Backup / Restore całej struktury serwera Discord (role, kanały, kategorie, uprawnienia)
 const { ChannelType, OverwriteType, PermissionsBitField } = require('discord.js');
 
-const BACKUP_VERSION = 2;
+const BACKUP_VERSION = 3;
 
 // Typy kanałów, które umiemy odtworzyć
 const RESTORABLE_CHANNEL_TYPES = new Set([
@@ -66,6 +66,19 @@ async function createBackup(guild) {
       permissionOverwrites: serializeOverwrites(c)
     }));
 
+  // Mapa członek -> jego role (do późniejszego przywrócenia ról tym samym osobom po ID)
+  await guild.members.fetch().catch(() => {});
+  const members = guild.members.cache
+    .map(m => ({
+      id: m.id,
+      tag: m.user ? m.user.tag : null,
+      // tylko role przypisywalne — bez @everyone i bez ról zarządzanych przez integracje
+      roles: m.roles.cache
+        .filter(r => r.id !== guild.id && !r.managed)
+        .map(r => r.id)
+    }))
+    .filter(m => m.roles.length > 0); // zapisujemy tylko członków, którzy mają jakieś role
+
   return {
     version: BACKUP_VERSION,
     createdAt: new Date().toISOString(),
@@ -82,7 +95,8 @@ async function createBackup(guild) {
       permissions: everyone.permissions.bitfield.toString()
     },
     roles,
-    channels
+    channels,
+    members
   };
 }
 
@@ -110,6 +124,7 @@ async function restoreBackup(guild, data, options = {}) {
   const summary = {
     rolesCreated: 0, rolesUpdated: 0, rolesSkipped: 0,
     channelsCreated: 0, channelsUpdated: 0, channelsSkipped: 0,
+    membersUpdated: 0, membersSkipped: 0,
     deleted: 0,
     errors: []
   };
@@ -272,6 +287,34 @@ async function restoreBackup(guild, data, options = {}) {
       }
     } catch (e) {
       summary.errors.push(`Kanał "${cb.name}": ${e.message}`);
+    }
+  }
+
+  // === 3b. ROLE CZŁONKÓW — ponadawaj role tym samym osobom (po ID użytkownika) ===
+  if (Array.isArray(data.members) && data.members.length) {
+    await guild.members.fetch().catch(() => {});
+    for (const mb of data.members) {
+      const member = guild.members.cache.get(mb.id);
+      if (!member) { summary.membersSkipped++; continue; } // osoby już nie ma na serwerze
+
+      // Zmapuj stare ID ról na aktualne i odfiltruj: nieistniejące, nad botem, zarządzane, już posiadane
+      const roleIds = (mb.roles || [])
+        .map(oldId => roleMap.get(oldId))
+        .filter(newId => {
+          if (!newId) return false;
+          const role = guild.roles.cache.get(newId);
+          return role && !role.managed && role.position < myTopPosition && !member.roles.cache.has(newId);
+        });
+
+      if (roleIds.length === 0) { summary.membersSkipped++; continue; }
+
+      try {
+        await member.roles.add([...new Set(roleIds)], 'Przywracanie backupu — role członków');
+        summary.membersUpdated++;
+        await sleep(150); // członków bywa dużo — łagodniejszy rate-limit
+      } catch (e) {
+        summary.errors.push(`Członek ${mb.tag || mb.id}: ${e.message}`);
+      }
     }
   }
 

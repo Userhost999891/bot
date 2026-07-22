@@ -234,6 +234,7 @@ async function getPool() {
         created_by_tag VARCHAR(64),
         role_count INT DEFAULT 0,
         channel_count INT DEFAULT 0,
+        member_count INT DEFAULT 0,
         data LONGTEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_guild (guild_id)
@@ -245,6 +246,14 @@ async function getPool() {
         ALTER TABLE reward_servers ADD COLUMN clink VARCHAR(64) DEFAULT NULL
       `);
       console.log('✅ Migracja: Dodano kolumnę clink do reward_servers.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
+    try {
+      await pool.execute(`
+        ALTER TABLE guild_backups ADD COLUMN member_count INT DEFAULT 0
+      `);
+      console.log('✅ Migracja: Dodano kolumnę member_count do guild_backups.');
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
@@ -772,8 +781,8 @@ async function markCommandFailed(id) {
 async function createBackupRecord(guildId, name, data, meta = {}) {
   const p = await getPool();
   const [result] = await p.execute(
-    `INSERT INTO guild_backups (guild_id, name, created_by, created_by_tag, role_count, channel_count, data)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO guild_backups (guild_id, name, created_by, created_by_tag, role_count, channel_count, member_count, data)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       guildId,
       name,
@@ -781,6 +790,7 @@ async function createBackupRecord(guildId, name, data, meta = {}) {
       meta.createdByTag || null,
       meta.roleCount || 0,
       meta.channelCount || 0,
+      meta.memberCount || 0,
       JSON.stringify(data)
     ]
   );
@@ -791,7 +801,7 @@ async function createBackupRecord(guildId, name, data, meta = {}) {
 async function getBackups(guildId) {
   const p = await getPool();
   const [rows] = await p.execute(
-    `SELECT id, guild_id, name, created_by, created_by_tag, role_count, channel_count, created_at
+    `SELECT id, guild_id, name, created_by, created_by_tag, role_count, channel_count, member_count, created_at
      FROM guild_backups WHERE guild_id = ? ORDER BY created_at DESC`,
     [guildId]
   );
