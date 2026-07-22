@@ -591,41 +591,47 @@ function setupNavigation() {
   }
 
   async function loadRolesForTickets() {
+    // Role supportu — właściwy cel tej funkcji, ładowany niezależnie od reszty
+    const container = $('ticket-support-roles');
     try {
-      const rolesUrl = `/api/guild/${selectedGuildId}/roles`;
-      const res = await fetch(rolesUrl);
-      const channelsRes = await fetch(`/api/guild/${selectedGuildId}/channels`);
-      const channels = await channelsRes.json();
-
-      const tttChan = $('ttt-channel');
-      if (tttChan) {
-        tttChan.innerHTML = '<option value="">-- Wybierz kanał --</option>';
-        channels.forEach(ch => {
-          const opt = document.createElement('option');
-          opt.value = ch.id;
-          opt.textContent = `#${ch.name}`;
-          tttChan.appendChild(opt);
+      const res = await fetch(`/api/guild/${selectedGuildId}/roles`);
+      const roles = await res.json();
+      if (!Array.isArray(roles)) throw new Error(roles.error || 'Serwer zwrócił niepoprawne dane ról');
+      if (container) {
+        container.innerHTML = '';
+        roles.forEach(r => {
+          const label = document.createElement('label');
+          label.className = 'channel-checkbox';
+          label.innerHTML = `<input type="checkbox" value="${r.id}"><span></span>`;
+          const span = label.querySelector('span');
+          span.textContent = r.name;
+          if (r.color && r.color !== '#000000') span.style.color = r.color;
+          const checkbox = label.querySelector('input');
+          checkbox.addEventListener('change', () => label.classList.toggle('checked', checkbox.checked));
+          container.appendChild(label);
         });
       }
+    } catch (e) {
+      console.error('Error loading ticket roles:', e);
+      if (container) container.innerHTML = `<p class="text-muted">Nie udało się załadować ról: ${escapeHtml(e.message)}</p>`;
+    }
 
-      const roles = await res.json();
-      if (!Array.isArray(roles)) throw new Error(roles.error || 'Server returned invalid roles data');
-      const container = $('ticket-support-roles');
-      container.innerHTML = '';
-      roles.forEach(r => {
-        const label = document.createElement('label');
-        label.className = 'channel-checkbox';
-        label.innerHTML = `<input type="checkbox" value="${r.id}"><span></span>`;
-        const span = label.querySelector('span');
-        span.textContent = r.name;
-        if (r.color && r.color !== '#000000') span.style.color = r.color;
-        const checkbox = label.querySelector('input');
-        checkbox.addEventListener('change', () => label.classList.toggle('checked', checkbox.checked));
-        container.appendChild(label);
+    // Populacja selecta kanału TTT — opcjonalna, nie może zablokować ładowania ról
+    try {
+      const tttChan = $('ttt-channel');
+      if (!tttChan) return;
+      const channelsRes = await fetch(`/api/guild/${selectedGuildId}/channels`);
+      const channels = await channelsRes.json();
+      if (!Array.isArray(channels)) return;
+      tttChan.innerHTML = '<option value="">-- Wybierz kanał --</option>';
+      channels.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.id;
+        opt.textContent = `#${ch.name}`;
+        tttChan.appendChild(opt);
       });
     } catch (e) {
-      console.error('Error loading roles:', e);
-      alert('Nie udało się załadować listy ról: ' + e.message);
+      console.error('Error loading ttt channels (non-critical):', e);
     }
   }
 

@@ -818,6 +818,8 @@ body {
   position: relative;
   width: 100%;
 }
+/* Otwarty select wychodzi ponad sąsiednie elementy (przyciski itp.) */
+.custom-select-wrapper.open { z-index: 200; }
 .custom-select-trigger {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; padding: 12px 16px;
@@ -838,10 +840,10 @@ body {
 .custom-select-options {
   position: absolute; top: 100%; left: 0; right: 0;
   max-height: 250px; overflow-y: auto;
-  background: var(--bg-input); border: 1px solid var(--accent);
+  background: #0e0e1c; border: 1px solid var(--accent);
   border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  z-index: 99; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  backdrop-filter: blur(15px);
+  z-index: 200; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
 }
 .custom-select-wrapper.open .custom-select-options {
   display: block; animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1029,7 +1031,9 @@ select:focus-visible, textarea:focus-visible, .sidebar-item:focus-visible,
 
 /* --- Staggered entrance for section content --- */
 .section:not(.hidden) > * {
-  animation: premiumRise 0.55s var(--ease-out) both;
+  /* backwards (nie both) — po animacji transform wraca do none, więc nie tworzy
+     kontekstu stackingu, który blokowałby z-index otwartych dropdownów */
+  animation: premiumRise 0.55s var(--ease-out) backwards;
 }
 .section:not(.hidden) > *:nth-child(1) { animation-delay: 0.02s; }
 .section:not(.hidden) > *:nth-child(2) { animation-delay: 0.08s; }
@@ -1047,7 +1051,7 @@ select:focus-visible, textarea:focus-visible, .sidebar-item:focus-visible,
 .server-grid .server-card,
 .backups-list .backup-card,
 .categories-list .category-card {
-  animation: premiumPop 0.5s var(--ease-out) both;
+  animation: premiumPop 0.5s var(--ease-out) backwards;
 }
 .stats-grid .stat-card:nth-child(1),
 .server-grid .server-card:nth-child(1),
@@ -1219,7 +1223,7 @@ select:focus-visible, textarea:focus-visible, .sidebar-item:focus-visible,
 /* --- Login page: floating logo + staggered feature reveal --- */
 .logo-icon { animation: gradientShift 4s ease infinite, logoFloat 5s ease-in-out infinite; }
 @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-.login-features .feature { animation: premiumRise 0.6s var(--ease-out) both; }
+.login-features .feature { animation: premiumRise 0.6s var(--ease-out) backwards; }
 .login-features .feature:nth-child(1) { animation-delay: 0.30s; }
 .login-features .feature:nth-child(2) { animation-delay: 0.37s; }
 .login-features .feature:nth-child(3) { animation-delay: 0.44s; }
