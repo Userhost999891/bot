@@ -225,6 +225,20 @@ async function getPool() {
         message_id VARCHAR(20)
       )
     `);
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS guild_backups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        guild_id VARCHAR(20) NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        created_by VARCHAR(20),
+        created_by_tag VARCHAR(64),
+        role_count INT DEFAULT 0,
+        channel_count INT DEFAULT 0,
+        data LONGTEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_guild (guild_id)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
 
     try {
       await pool.execute(`
@@ -752,6 +766,65 @@ async function markCommandFailed(id) {
   await p.execute('UPDATE pending_commands SET status = "failed", executed_at = NOW() WHERE id = ?', [id]);
 }
 
+// =====================
+// BACKUP FUNCTIONS
+// =====================
+async function createBackupRecord(guildId, name, data, meta = {}) {
+  const p = await getPool();
+  const [result] = await p.execute(
+    `INSERT INTO guild_backups (guild_id, name, created_by, created_by_tag, role_count, channel_count, data)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      guildId,
+      name,
+      meta.createdBy || null,
+      meta.createdByTag || null,
+      meta.roleCount || 0,
+      meta.channelCount || 0,
+      JSON.stringify(data)
+    ]
+  );
+  return result.insertId;
+}
+
+// Lista backupów bez ciężkiego pola `data` (do widoku listy)
+async function getBackups(guildId) {
+  const p = await getPool();
+  const [rows] = await p.execute(
+    `SELECT id, guild_id, name, created_by, created_by_tag, role_count, channel_count, created_at
+     FROM guild_backups WHERE guild_id = ? ORDER BY created_at DESC`,
+    [guildId]
+  );
+  return rows;
+}
+
+async function getBackup(guildId, backupId) {
+  const p = await getPool();
+  const [rows] = await p.execute(
+    'SELECT * FROM guild_backups WHERE id = ? AND guild_id = ?',
+    [backupId, guildId]
+  );
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  try { row.data = JSON.parse(row.data); } catch (e) { row.data = null; }
+  return row;
+}
+
+async function deleteBackup(guildId, backupId) {
+  const p = await getPool();
+  const [result] = await p.execute(
+    'DELETE FROM guild_backups WHERE id = ? AND guild_id = ?',
+    [backupId, guildId]
+  );
+  return result.affectedRows > 0;
+}
+
+async function countBackups(guildId) {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT COUNT(*) as count FROM guild_backups WHERE guild_id = ?', [guildId]);
+  return rows[0].count;
+}
+
 module.exports = {
   getPool,
   // Verification
@@ -771,5 +844,7 @@ module.exports = {
   getAllRewardChannels, getServerByChannel,
   hasClaimedReward, addPendingReward, getPendingRewards, markRewardClaimed, removeReward,
   // Pending Commands
-  addPendingCommand, getPendingCommandsList, markCommandExecuted, markCommandFailed
+  addPendingCommand, getPendingCommandsList, markCommandExecuted, markCommandFailed,
+  // Backups
+  createBackupRecord, getBackups, getBackup, deleteBackup, countBackups
 };

@@ -12,9 +12,9 @@ function startWebServer(discordClient) {
   // Trust proxy for Railway/Render (needed for secure cookies behind reverse proxy)
   app.set('trust proxy', 1);
 
-  // Middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Middleware — zwiększony limit, bo backupy serwera potrafią być duże (JSON)
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
   const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_URL;
 
@@ -39,6 +39,7 @@ function startWebServer(discordClient) {
   app.use('/api/tickets', require('./routes/tickets-api')(discordClient));
   app.use('/api/announcements', require('./routes/announcements-api')(discordClient));
   app.use('/api/rewards', require('./routes/rewards-api')(discordClient));
+  app.use('/api/backup', require('./routes/backup-api')(discordClient));
   app.use('/', require('./routes/dashboard'));
 
   // Health check endpoint (for hosting platforms)

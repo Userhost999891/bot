@@ -155,6 +155,7 @@ function setupNavigation() {
       if (section === 'boosts') loadBoostsData();
       if (section === 'lobby') loadLobbyData();
       if (section === 'boosttester') loadBoostTesterData();
+      if (section === 'backup') loadBackupData();
     }
   }
 
@@ -1621,6 +1622,178 @@ function setupNavigation() {
   }
 
   // =============================
+  // BACKUP
+  // =============================
+  async function loadBackupData() {
+    await loadBackups();
+  }
+
+  async function loadBackups() {
+    const list = $('backups-list');
+    if (!list) return;
+    list.innerHTML = '<p class="text-muted">Ładowanie backupów...</p>';
+    try {
+      const res = await fetch(`/api/backup/guild/${selectedGuildId}/backups`);
+      const backups = await res.json();
+      if (!Array.isArray(backups)) throw new Error(backups.error || 'Błąd serwera');
+
+      if (backups.length === 0) {
+        list.innerHTML = `
+          <div class="backup-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="42" height="42"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+            <p>Brak zapisanych backupów. Utwórz pierwszy backup powyżej.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = '';
+      backups.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'backup-card';
+        const date = b.created_at ? new Date(b.created_at).toLocaleString('pl-PL') : '—';
+        const author = b.created_by_tag ? escapeHtml(b.created_by_tag) : 'nieznany';
+        card.innerHTML = `
+          <div class="backup-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+          </div>
+          <div class="backup-card-info">
+            <div class="backup-card-name">${escapeHtml(b.name)}</div>
+            <div class="backup-card-meta">
+              <span>📅 ${date}</span>
+              <span>👤 ${author}</span>
+              <span>🎭 ${b.role_count} ról</span>
+              <span>📁 ${b.channel_count} kanałów</span>
+            </div>
+          </div>
+          <div class="backup-card-actions">
+            <button class="action-btn action-btn-download action-btn-sm" data-download="${b.id}">⬇️ Pobierz</button>
+            <button class="action-btn action-btn-restore action-btn-sm" data-restore="${b.id}">♻️ Przywróć</button>
+            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${b.id}">🗑️</button>
+          </div>`;
+        card.querySelector('[data-download]').addEventListener('click', () => downloadBackup(b.id));
+        card.querySelector('[data-restore]').addEventListener('click', () => openRestoreModal(b.id, b.name));
+        card.querySelector('[data-delete]').addEventListener('click', () => deleteBackup(b.id, b.name));
+        list.appendChild(card);
+      });
+    } catch (e) {
+      list.innerHTML = `<p class="text-muted">Błąd ładowania backupów: ${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  async function createBackup() {
+    const name = $('backup-name').value.trim();
+    try {
+      disableButtons(true);
+      showSectionStatus('backup', 'Tworzenie backupu — zbieram role i kanały...', 'info');
+      const res = await fetch(`/api/backup/guild/${selectedGuildId}/backups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      showSectionStatus('backup', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success) {
+        $('backup-name').value = '';
+        await loadBackups();
+      }
+    } catch (e) {
+      showSectionStatus('backup', 'Błąd tworzenia backupu', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  function downloadBackup(id) {
+    // Endpoint zwraca plik z nagłówkiem attachment — po prostu otwieramy go
+    window.location.href = `/api/backup/guild/${selectedGuildId}/backups/${id}/download`;
+  }
+
+  function triggerBackupUpload() {
+    $('backup-file-input').click();
+  }
+
+  async function handleBackupFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      disableButtons(true);
+      showSectionStatus('backup', `Wgrywanie pliku "${file.name}"...`, 'info');
+      const text = await file.text();
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch (err) { throw new Error('Plik nie jest poprawnym JSON-em'); }
+
+      const name = parsed.name || file.name.replace(/\.json$/i, '');
+      const res = await fetch(`/api/backup/guild/${selectedGuildId}/backups/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: parsed, name })
+      });
+      const data = await res.json();
+      showSectionStatus('backup', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success) await loadBackups();
+    } catch (err) {
+      showSectionStatus('backup', 'Błąd wgrywania: ' + err.message, 'error');
+    } finally {
+      e.target.value = '';
+      disableButtons(false);
+    }
+  }
+
+  function openRestoreModal(id, name) {
+    $('restore-backup-id').value = id;
+    $('restore-modal-title').textContent = `Przywrócić "${name}"?`;
+    $('restore-delete-extra').checked = false;
+    $('restore-delete-label').classList.remove('checked');
+    $('restore-warning-text').textContent = '';
+    $('restore-modal').classList.remove('hidden');
+  }
+
+  function closeRestoreModal() {
+    $('restore-modal').classList.add('hidden');
+  }
+
+  async function confirmRestore() {
+    const id = $('restore-backup-id').value;
+    const deleteExtra = $('restore-delete-extra').checked;
+    if (!id) return;
+    try {
+      disableButtons(true);
+      closeRestoreModal();
+      showSectionStatus('backup', 'Przywracanie w toku — to może potrwać kilkanaście sekund...', 'info');
+      const res = await fetch(`/api/backup/guild/${selectedGuildId}/backups/${id}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleteExtra })
+      });
+      const data = await res.json();
+      showSectionStatus('backup', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success && data.summary && data.summary.errors && data.summary.errors.length) {
+        console.warn('Restore errors:', data.summary.errors);
+      }
+    } catch (e) {
+      showSectionStatus('backup', 'Błąd przywracania', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  async function deleteBackup(id, name) {
+    if (!confirm(`Usunąć backup "${name}"? Tej operacji nie można cofnąć.`)) return;
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/backup/guild/${selectedGuildId}/backups/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      showSectionStatus('backup', data.message || data.error, data.success ? 'success' : 'error');
+      if (data.success) await loadBackups();
+    } catch (e) {
+      showSectionStatus('backup', 'Błąd usuwania', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  // =============================
   // EVENT LISTENERS
   // =============================
   document.addEventListener('DOMContentLoaded', () => {
@@ -1683,6 +1856,42 @@ function setupNavigation() {
     if (rewModal) {
       rewModal.addEventListener('click', (e) => {
         if (e.target === rewModal) closeRewardServerModal();
+      });
+    }
+
+    // Backup buttons
+    const createBackupBtn = $('create-backup-btn');
+    if (createBackupBtn) createBackupBtn.addEventListener('click', createBackup);
+
+    const uploadBackupBtn = $('upload-backup-btn');
+    if (uploadBackupBtn) uploadBackupBtn.addEventListener('click', triggerBackupUpload);
+
+    const backupFileInput = $('backup-file-input');
+    if (backupFileInput) backupFileInput.addEventListener('change', handleBackupFile);
+
+    const refreshBackupsBtn = $('refresh-backups-btn');
+    if (refreshBackupsBtn) refreshBackupsBtn.addEventListener('click', loadBackups);
+
+    const restoreConfirmBtn = $('restore-confirm-btn');
+    if (restoreConfirmBtn) restoreConfirmBtn.addEventListener('click', confirmRestore);
+
+    const restoreCancelBtn = $('restore-cancel-btn');
+    if (restoreCancelBtn) restoreCancelBtn.addEventListener('click', closeRestoreModal);
+
+    const restoreModal = $('restore-modal');
+    if (restoreModal) {
+      restoreModal.addEventListener('click', (e) => {
+        if (e.target === restoreModal) closeRestoreModal();
+      });
+    }
+
+    const restoreDeleteExtra = $('restore-delete-extra');
+    if (restoreDeleteExtra) {
+      restoreDeleteExtra.addEventListener('change', () => {
+        $('restore-delete-label').classList.toggle('checked', restoreDeleteExtra.checked);
+        $('restore-warning-text').textContent = restoreDeleteExtra.checked
+          ? '⚠️ Uwaga: kanały i role spoza backupu zostaną trwale usunięte!'
+          : '';
       });
     }
 

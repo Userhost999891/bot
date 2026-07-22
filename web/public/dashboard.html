@@ -75,6 +75,10 @@
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-label">Narzędzia</div>
 
+      <button class="sidebar-item disabled" data-section="backup" id="nav-backup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+        <span>Backup</span>
+      </button>
       <button class="sidebar-item disabled" data-section="boosttester" id="nav-boosttester">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         <span>Boost Tester</span>
@@ -707,7 +711,97 @@
       </div>
     </section>
 
+    <!-- BACKUP -->
+    <section class="section hidden" id="section-backup">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span>
+            Backup Serwera
+          </h1>
+          <span class="server-badge" id="backup-server-name"></span>
+        </div>
+        <p class="section-desc">Zapisz pełną strukturę serwera — role, kanały, kategorie i uprawnienia. Backup pobierzesz jako plik, wgrasz z pliku i przywrócisz jednym kliknięciem.</p>
+      </div>
+
+      <div class="status-bar hidden" id="backup-status-bar">
+        <span id="backup-status-message"></span>
+      </div>
+
+      <!-- ACTION CARDS -->
+      <div class="backup-actions-grid">
+        <div class="backup-action-card">
+          <div class="backup-action-icon backup-icon-create">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M12 12v5"/><path d="M9.5 14.5L12 12l2.5 2.5"/></svg>
+          </div>
+          <h3>Nowy backup</h3>
+          <p>Wykonaj snapshot aktualnego stanu serwera i zapisz go w panelu.</p>
+          <input type="text" class="config-input" id="backup-name" placeholder="Nazwa backupu (opcjonalnie)" maxlength="120" style="margin-bottom: 12px;">
+          <button class="action-btn action-btn-save" id="create-backup-btn" style="width: 100%; justify-content: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+            Utwórz backup
+          </button>
+        </div>
+
+        <div class="backup-action-card">
+          <div class="backup-action-icon backup-icon-upload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h3>Wgraj z pliku</h3>
+          <p>Masz plik backupu (.json)? Wgraj go do panelu, aby móc go przywrócić.</p>
+          <input type="file" id="backup-file-input" accept="application/json,.json" hidden>
+          <button class="action-btn action-btn-roles" id="upload-backup-btn" style="width: 100%; justify-content: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Wybierz plik JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- BACKUPS LIST -->
+      <div class="categories-section" style="margin-top: 8px;">
+        <div class="categories-header">
+          <h2 class="categories-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg> Zapisane backupy</h2>
+          <button class="action-btn action-btn-cancel action-btn-sm" id="refresh-backups-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Odśwież
+          </button>
+        </div>
+        <div class="backups-list" id="backups-list">
+          <p class="text-muted">Ładowanie backupów...</p>
+        </div>
+      </div>
+
+      <div class="info-card" style="margin-top: 24px;">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Jak działa przywracanie?</h3>
+        <p>✅ Bot <strong>dotwarza brakujące</strong> role, kategorie i kanały oraz nakłada zapisane uprawnienia. Domyślnie <strong>nic nie usuwa</strong> — istniejące kanały zostają nietknięte (aktualizowane są tylko ich uprawnienia).</p>
+        <p>🔗 Uprawnienia są mapowane po nazwach ról, więc działają nawet po odtworzeniu serwera od zera.</p>
+        <p style="color: var(--warning);">⚠️ Tryb „Pełne przywrócenie" dodatkowo <strong>usuwa</strong> kanały i role, których nie ma w backupie — używaj ostrożnie.</p>
+      </div>
+    </section>
+
   </main>
+
+  <!-- RESTORE CONFIRM MODAL -->
+  <div class="modal-overlay hidden" id="restore-modal">
+    <div class="modal-card">
+      <h3 class="modal-title" id="restore-modal-title">Przywrócić backup?</h3>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin-bottom: 16px;">
+          Bot odtworzy role, kanały i uprawnienia z tego backupu. Wybierz tryb przywracania:
+        </p>
+        <label class="channel-checkbox" id="restore-delete-label" style="width: 100%; box-sizing: border-box;">
+          <input type="checkbox" id="restore-delete-extra">
+          <span>Pełne przywrócenie — usuń kanały i role, których nie ma w backupie</span>
+        </label>
+        <p style="color: var(--warning); font-size: 0.78rem; margin-top: 10px;" id="restore-warning-text"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="action-btn action-btn-perms" id="restore-confirm-btn">Przywróć</button>
+        <button class="action-btn action-btn-cancel" id="restore-cancel-btn">Anuluj</button>
+      </div>
+      <input type="hidden" id="restore-backup-id" value="">
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
