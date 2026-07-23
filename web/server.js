@@ -32,6 +32,7 @@ function startWebServer(discordClient) {
 
   // Static files
   app.use(express.static(path.join(__dirname, 'public')));
+  app.use('/sounds', express.static(path.join(__dirname, 'sounds')));
 
   // Routes
   app.use('/auth', require('./routes/auth'));

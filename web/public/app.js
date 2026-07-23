@@ -45,64 +45,24 @@
   }
 
 // =============================
-// UI SOUND MANAGER & NAVIGATION
+// UI SOUND (tylko click.ogg) & NAVIGATION
 // =============================
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const clickSound = new Audio('/sounds/click.ogg');
+clickSound.preload = 'auto';
+clickSound.volume = 0.4;
 
-function playTone(frequencies, type, duration, vol=0.1) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  
-  const freqs = Array.isArray(frequencies) ? frequencies : [frequencies];
-  
-  freqs.forEach(freq => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    // Add filtering for softer edge
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 2000;
-
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
-    // Smooth envelope attack & release
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  });
+function playClick() {
+  try {
+    clickSound.currentTime = 0;
+    const p = clickSound.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) { /* autoplay policy / brak pliku — cisza */ }
 }
 
-const UI = {
-  hover: () => playTone(800, 'sine', 0.05, 0.03),
-  click: () => playTone([300, 450], 'triangle', 0.1, 0.06),
-  success: () => {
-    playTone([400, 600], 'sine', 0.15, 0.05);
-    setTimeout(() => playTone([600, 800], 'sine', 0.3, 0.05), 100);
-  },
-  error: () => {
-    playTone([150, 200], 'sawtooth', 0.2, 0.06);
-    setTimeout(() => playTone([100, 150], 'sawtooth', 0.3, 0.07), 150);
-  }
-};
-
 function setupAudio() {
-  document.addEventListener('mouseover', (e) => {
-    if (e.target.closest('.action-btn, .sidebar-item, .stat-card, .category-card, .server-card, .channel-checkbox')) {
-      UI.hover();
-    }
-  });
-  
   document.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.action-btn, .sidebar-item, .server-card, .channel-checkbox')) {
-      UI.click();
+    if (e.target.closest('.action-btn, .sidebar-item, .server-card, .channel-checkbox, .custom-select-trigger, .custom-select-option')) {
+      playClick();
     }
   });
 }
@@ -1593,10 +1553,6 @@ function setupNavigation() {
   // UTILITIES
   // =============================
   function showSectionStatus(prefix, message, type) {
-    if (type === 'success') UI.success();
-    else if (type === 'error') UI.error();
-    else UI.click();
-
     const bar = $(`${prefix}-status-bar`);
     const msg = $(`${prefix}-status-message`);
     if (!bar || !msg) return;
@@ -1640,25 +1596,6 @@ function setupNavigation() {
     requestAnimationFrame(tick);
   }
 
-  // Efekt ripple na przyciskach i kartach serwerów
-  function setupRipple() {
-    if (prefersReducedMotion) return;
-    document.addEventListener('click', (e) => {
-      const el = e.target.closest('.action-btn, .server-card');
-      if (!el || el.disabled) return;
-      const rect = el.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height);
-      const ripple = document.createElement('span');
-      ripple.className = 'ripple';
-      ripple.style.width = ripple.style.height = size + 'px';
-      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-      const prevPosition = getComputedStyle(el).position;
-      if (prevPosition === 'static') el.style.position = 'relative';
-      el.appendChild(ripple);
-      setTimeout(() => ripple.remove(), 650);
-    });
-  }
 
   // =============================
   // BACKUP
@@ -1936,7 +1873,6 @@ function setupNavigation() {
     }
 
     setupAnnouncementsAutocomplete();
-    setupRipple();
     init();
   });
 })();
