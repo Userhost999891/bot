@@ -67,6 +67,42 @@ function setupAudio() {
   });
 }
 
+// =============================
+// MOBILE NAV (drawer)
+// =============================
+function setupMobileNav() {
+  const btn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!btn || !sidebar || !overlay) return;
+
+  const close = () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+    document.body.classList.remove('no-scroll');
+    btn.setAttribute('aria-expanded', 'false');
+  };
+  const open = () => {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+    document.body.classList.add('no-scroll');
+    btn.setAttribute('aria-expanded', 'true');
+  };
+
+  btn.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? close() : open();
+  });
+  overlay.addEventListener('click', close);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  // Po wyborze pozycji menu na telefonie chowamy drawer
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 900) close();
+    });
+  });
+}
+
 function setupNavigation() {
     document.querySelectorAll('.sidebar-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -1948,6 +1984,7 @@ function setupNavigation() {
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
 
     setupAnnouncementsAutocomplete();
+    setupMobileNav();
     init();
   });
 })();
