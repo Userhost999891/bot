@@ -11,8 +11,6 @@ const {
   getConfig
 } = require('../../database/db');
 
-// Cooldown: 5 minutes per user
-const COOLDOWN_MS = 5 * 60 * 1000;
 const MAX_TICKETS_DEFAULT = 50;
 const MC_NICK_REGEX = /^[A-Za-z0-9_]{3,16}$/;
 
@@ -53,6 +51,17 @@ function isTicketStaff(member, ticketConfig) {
 async function denyInteraction(interaction, message) {
   try { await interaction.deleteReply(); } catch (e) {}
   try { await interaction.followUp({ content: message, ephemeral: true }); } catch (e) {}
+}
+
+/**
+ * Wyślij log zdarzenia ticketowego na skonfigurowany kanał logów (jeśli ustawiony)
+ */
+async function sendTicketLog(guild, ticketConfig, embed) {
+  try {
+    if (!ticketConfig || !ticketConfig.log_channel_id) return;
+    const channel = guild.channels.cache.get(ticketConfig.log_channel_id);
+    if (channel) await channel.send({ embeds: [embed] });
+  } catch (e) { /* log nie może wywalić głównej akcji */ }
 }
 
 /**
@@ -203,8 +212,10 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     });
   }
 
-  // === CHECK: User cooldown (5 min) ===
-  const lastTicketTime = await getLastUserTicketTime(guild.id, user.id);
+  // === CHECK: User cooldown (konfigurowalny w panelu, 0 = wyłączony) ===
+  const cooldownMinutes = Number.isFinite(+ticketConfig?.cooldown_minutes) ? +ticketConfig.cooldown_minutes : 5;
+  const cooldownMs = cooldownMinutes * 60 * 1000;
+  const lastTicketTime = cooldownMs > 0 ? await getLastUserTicketTime(guild.id, user.id) : null;
   if (lastTicketTime) {
     let lastTime;
     if (lastTicketTime instanceof Date) {
@@ -215,7 +226,7 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
       lastTime = new Date(str.endsWith('Z') || str.includes('+') ? str : str + 'Z').getTime();
     }
     const elapsed = Date.now() - lastTime;
-    const remaining = COOLDOWN_MS - elapsed;
+    const remaining = cooldownMs - elapsed;
 
     if (remaining > 0) {
       const minutes = Math.floor(remaining / 60000);
@@ -226,12 +237,15 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
     }
   }
 
-  // === CHECK: User already has open ticket in this category ===
-  const userTickets = await countUserActiveTickets(guild.id, user.id);
-  if (userTickets >= 3) {
-    return interaction.editReply({
-      content: `❌〢Masz już **${userTickets}** otwarte tickety. Zamknij stare zanim otworzysz nowe.`
-    });
+  // === CHECK: Limit otwartych ticketów na osobę (konfigurowalny, 0 = bez limitu) ===
+  const userTicketLimit = Number.isFinite(+ticketConfig?.user_ticket_limit) ? +ticketConfig.user_ticket_limit : 3;
+  if (userTicketLimit > 0) {
+    const userTickets = await countUserActiveTickets(guild.id, user.id);
+    if (userTickets >= userTicketLimit) {
+      return interaction.editReply({
+        content: `❌〢Masz już **${userTickets}** otwarte tickety. Zamknij stare zanim otworzysz nowe.`
+      });
+    }
   }
 
   try {
@@ -376,6 +390,13 @@ async function executeTicketCreation(interaction, category, mcNick = null, socia
 
     await interaction.editReply({ embeds: [linkEmbed], components: [linkButton] });
 
+    // Log otwarcia ticketa
+    await sendTicketLog(guild, ticketConfig, new EmbedBuilder()
+      .setTitle('Ticket otwarty')
+      .setDescription(`**#${channelName}** (${ticketChannel})\nAutor: ${user} (\`${user.tag}\`)\nKategoria: **${category.name}**${mcNick ? `\nNick MC: **${mcNick}**` : ''}`)
+      .setColor(0x43b581)
+      .setTimestamp());
+
   } catch (error) {
     console.error('Error creating ticket:', error.message, error.stack);
     try {
@@ -413,6 +434,13 @@ async function handleTicketClose(interaction) {
     .setTimestamp();
 
   await interaction.editReply({ embeds: [closeEmbed] });
+
+  // Log zamknięcia ticketa
+  await sendTicketLog(interaction.guild, ticketConfig, new EmbedBuilder()
+    .setTitle('Ticket zamknięty')
+    .setDescription(`**#${interaction.channel.name}** (Ticket #${ticket.ticket_number || '?'})\nZamknięty przez: ${interaction.user} (\`${interaction.user.tag}\`)\nAutor ticketa: <@${ticket.user_id}>`)
+    .setColor(0xf04747)
+    .setTimestamp());
 
   setTimeout(async () => {
     try {
@@ -456,6 +484,13 @@ async function handleTicketClaim(interaction) {
     .setTimestamp();
 
   await interaction.editReply({ embeds: [claimEmbed] });
+
+  // Log odebrania ticketa
+  await sendTicketLog(interaction.guild, ticketConfig, new EmbedBuilder()
+    .setTitle('Ticket odebrany')
+    .setDescription(`**#${interaction.channel.name}**\nOdebrał: ${interaction.user} (\`${interaction.user.tag}\`)`)
+    .setColor(0xfaa61a)
+    .setTimestamp());
 }
 
 /**

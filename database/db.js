@@ -257,6 +257,28 @@ async function getPool() {
     } catch (e) {
       // Ignoruj błąd jeśli kolumna już istnieje
     }
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS bot_settings (
+        setting_key VARCHAR(64) PRIMARY KEY,
+        setting_value TEXT
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    try {
+      await pool.execute(`
+        ALTER TABLE ticket_config ADD COLUMN user_ticket_limit INT DEFAULT 3
+      `);
+      console.log('✅ Migracja: Dodano kolumnę user_ticket_limit do ticket_config.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
+    try {
+      await pool.execute(`
+        ALTER TABLE ticket_config ADD COLUMN cooldown_minutes INT DEFAULT 5
+      `);
+      console.log('✅ Migracja: Dodano kolumnę cooldown_minutes do ticket_config.');
+    } catch (e) {
+      // Ignoruj błąd jeśli kolumna już istnieje
+    }
 
     // Ensure utf8mb4 conversion for dynamic discord inputs containing emojis
     const tables = ['guild_config', 'ticket_config', 'announcements_config', 'reward_servers', 'ticket_categories'];
@@ -411,6 +433,9 @@ async function setTicketConfig(guildId, config) {
     const supportRoleIds = roleIdsJson !== undefined ? roleIdsJson : existing.support_role_ids;
     const ticketMessageId = config.ticket_message_id !== undefined ? (config.ticket_message_id || null) : existing.ticket_message_id;
     const logChannelId = config.log_channel_id !== undefined ? (config.log_channel_id || null) : existing.log_channel_id;
+    const maxTickets = config.max_tickets !== undefined ? config.max_tickets : existing.max_tickets;
+    const userTicketLimit = config.user_ticket_limit !== undefined ? config.user_ticket_limit : existing.user_ticket_limit;
+    const cooldownMinutes = config.cooldown_minutes !== undefined ? config.cooldown_minutes : existing.cooldown_minutes;
 
     await p.execute(`
       UPDATE ticket_config SET
@@ -418,22 +443,45 @@ async function setTicketConfig(guildId, config) {
         support_role_id = ?,
         support_role_ids = ?,
         ticket_message_id = ?,
-        log_channel_id = ?
+        log_channel_id = ?,
+        max_tickets = ?,
+        user_ticket_limit = ?,
+        cooldown_minutes = ?
       WHERE guild_id = ?
-    `, [ticketChannelId, supportRoleId, supportRoleIds, ticketMessageId, logChannelId, guildId]);
+    `, [ticketChannelId, supportRoleId, supportRoleIds, ticketMessageId, logChannelId, maxTickets, userTicketLimit, cooldownMinutes, guildId]);
   } else {
     await p.execute(`
-      INSERT INTO ticket_config (guild_id, ticket_channel_id, support_role_id, support_role_ids, ticket_message_id, log_channel_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO ticket_config (guild_id, ticket_channel_id, support_role_id, support_role_ids, ticket_message_id, log_channel_id, max_tickets, user_ticket_limit, cooldown_minutes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       guildId,
       config.ticket_channel_id || null,
       config.support_role_id || null,
       roleIdsJson || null,
       config.ticket_message_id || null,
-      config.log_channel_id || null
+      config.log_channel_id || null,
+      config.max_tickets !== undefined ? config.max_tickets : 50,
+      config.user_ticket_limit !== undefined ? config.user_ticket_limit : 3,
+      config.cooldown_minutes !== undefined ? config.cooldown_minutes : 5
     ]);
   }
+}
+
+// =====================
+// BOT SETTINGS (globalne, key-value)
+// =====================
+async function getBotSetting(key) {
+  const p = await getPool();
+  const [rows] = await p.execute('SELECT setting_value FROM bot_settings WHERE setting_key = ?', [key]);
+  return rows.length > 0 ? rows[0].setting_value : null;
+}
+
+async function setBotSetting(key, value) {
+  const p = await getPool();
+  await p.execute(
+    'INSERT INTO bot_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+    [key, value, value]
+  );
 }
 
 async function getNextTicketNumber(guildId) {
@@ -856,5 +904,7 @@ module.exports = {
   // Pending Commands
   addPendingCommand, getPendingCommandsList, markCommandExecuted, markCommandFailed,
   // Backups
-  createBackupRecord, getBackups, getBackup, deleteBackup, countBackups
+  createBackupRecord, getBackups, getBackup, deleteBackup, countBackups,
+  // Bot settings
+  getBotSetting, setBotSetting
 };

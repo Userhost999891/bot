@@ -2,14 +2,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg-primary: #030308;
-  --bg-secondary: #080812;
-  --bg-card: rgba(12, 12, 22, 0.55);
-  --bg-card-solid: #0A0A12;
-  --bg-card-hover: rgba(22, 22, 40, 0.7);
-  --bg-input: rgba(16, 16, 32, 0.7);
-  --bg-sidebar: rgba(6, 6, 12, 0.88);
+  --bg-primary: #000000;
+  --bg-secondary: #050506;
+  --bg-card: rgba(16, 16, 19, 0.6);
+  --bg-card-solid: #0a0a0c;
+  --bg-card-hover: rgba(26, 26, 31, 0.7);
+  --bg-input: rgba(20, 20, 24, 0.7);
+  --bg-sidebar: rgba(3, 3, 4, 0.92);
   --bg-glass: rgba(255, 255, 255, 0.03);
+  --grad-premium: linear-gradient(135deg, #5865F2 0%, #8b5cf6 55%, #c026d3 115%);
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.12);
   --border-active: #5865F2;
@@ -147,20 +148,14 @@ body {
 .logo-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 88px; height: 88px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed, var(--teal));
-  background-size: 200% 200%;
-  animation: gradientShift 4s ease infinite;
-  border-radius: 24px; color: white;
-  box-shadow: 0 12px 40px var(--accent-glow);
+  border-radius: 24px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
+.logo-icon img { width: 100%; height: 100%; object-fit: cover; }
 
 .login-title {
   font-size: 2.4rem; font-weight: 900;
-  background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, #7c3aed 100%);
+  background: linear-gradient(135deg, #fff 0%, #8b5cf6 60%, #c026d3 110%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; margin-bottom: 4px;
   letter-spacing: -0.5px;
@@ -176,7 +171,7 @@ body {
 }
 .login-btn {
   display: inline-flex; align-items: center; gap: 12px;
-  background: linear-gradient(135deg, var(--accent), #4752C4);
+  background: var(--grad-premium);
   color: white;
   padding: 16px 36px; border-radius: var(--radius);
   text-decoration: none; font-weight: 700; font-size: 1rem;
@@ -229,13 +224,12 @@ body {
 .sidebar-logo {
   display: flex; align-items: center; justify-content: center;
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  border-radius: 12px; color: white; flex-shrink: 0;
-  box-shadow: 0 4px 15px var(--accent-glow);
+  border-radius: 12px; flex-shrink: 0; overflow: hidden;
 }
+.sidebar-logo img { width: 100%; height: 100%; object-fit: cover; }
 .sidebar-title {
   font-size: 1.05rem; font-weight: 800;
-  background: linear-gradient(135deg, #fff, var(--accent));
+  background: linear-gradient(135deg, #fff, #a78bfa);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -266,9 +260,8 @@ body {
   content: '';
   position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 20px;
-  background: var(--accent);
+  background: var(--grad-premium);
   border-radius: 0 3px 3px 0;
-  box-shadow: 0 0 10px var(--accent-glow);
 }
 .sidebar-item.active svg { stroke: var(--accent); }
 .sidebar-item.disabled { opacity: 0.35; cursor: not-allowed; }
@@ -527,7 +520,7 @@ body {
   font-weight: 600;
   border: 1px solid rgba(255,255,255,0.05);
 }
-.action-btn-save { background: linear-gradient(135deg, var(--accent), #4752C4); box-shadow: 0 2px 10px var(--accent-glow); }
+.action-btn-save { background: var(--grad-premium); box-shadow: 0 2px 10px var(--accent-glow); }
 .action-btn-save:hover { box-shadow: 0 4px 14px var(--accent-glow); }
 .action-btn-roles { background: linear-gradient(135deg, var(--purple), #8e44ad); box-shadow: 0 2px 10px var(--purple-glow); }
 .action-btn-roles:hover { box-shadow: 0 4px 14px var(--purple-glow); }
@@ -951,6 +944,7 @@ body {
   display: flex; flex-wrap: wrap; gap: 6px 14px;
 }
 .backup-card-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.backup-card-meta span + span::before { content: '·'; margin-right: 10px; opacity: 0.5; }
 .backup-card-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 .action-btn-download { background: linear-gradient(135deg, var(--teal), #16a085); box-shadow: 0 2px 10px var(--teal-glow); }
 .action-btn-download:hover { box-shadow: 0 4px 14px var(--teal-glow); }
@@ -1175,7 +1169,7 @@ select:focus-visible, textarea:focus-visible, .sidebar-item:focus-visible,
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
 
 /* --- Login page: floating logo + staggered feature reveal --- */
-.logo-icon { animation: gradientShift 4s ease infinite, logoFloat 6s ease-in-out infinite; }
+.logo-icon { animation: logoFloat 6s ease-in-out infinite; }
 @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 .login-features .feature { animation: premiumRise 0.6s var(--ease-out) backwards; }
 .login-features .feature:nth-child(1) { animation-delay: 0.30s; }

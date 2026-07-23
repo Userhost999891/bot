@@ -6,9 +6,27 @@ const {
   getActiveTicketChannelIds,
   getAnnouncementsConfig, setAnnouncementsConfig,
   getRewardServers, addRewardServer, updateRewardServer, deleteRewardServer,
-  getTTTConfig, setTTTConfig
+  getTTTConfig, setTTTConfig,
+  getBotSetting, setBotSetting
 } = require('../../database/db');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField, ActivityType } = require('discord.js');
+
+// Mapowanie typów aktywności statusu bota
+const ACTIVITY_TYPES = {
+  playing: ActivityType.Playing,
+  listening: ActivityType.Listening,
+  watching: ActivityType.Watching,
+  competing: ActivityType.Competing
+};
+const PRESENCE_STATUSES = ['online', 'idle', 'dnd'];
+
+function applyBotPresence(discordClient, statusCfg) {
+  const type = ACTIVITY_TYPES[statusCfg.type] !== undefined ? ACTIVITY_TYPES[statusCfg.type] : ActivityType.Watching;
+  discordClient.user.setPresence({
+    status: PRESENCE_STATUSES.includes(statusCfg.presence) ? statusCfg.presence : 'online',
+    activities: statusCfg.text ? [{ name: statusCfg.text, type }] : []
+  });
+}
 const { authMiddleware, adminParamMiddleware } = require('./middleware');
 
 module.exports = function(discordClient) {
@@ -360,6 +378,65 @@ module.exports = function(discordClient) {
     res.json({ clientId: process.env.DISCORD_CLIENT_ID });
   });
 
+  // === USTAWIENIA BOTA ===
+  router.get('/guild/:id/bot-settings', authMiddleware, async (req, res) => {
+    try {
+      let bot_status = { type: 'watching', text: 'NarisMC Core', presence: 'online' };
+      const raw = await getBotSetting('bot_status');
+      if (raw) { try { bot_status = { ...bot_status, ...JSON.parse(raw) }; } catch (e) {} }
+
+      const tc = await getTicketConfig(req.params.id);
+      res.json({
+        bot_status,
+        tickets: {
+          max_tickets: tc?.max_tickets ?? 50,
+          user_ticket_limit: tc?.user_ticket_limit ?? 3,
+          cooldown_minutes: tc?.cooldown_minutes ?? 5,
+          log_channel_id: tc?.log_channel_id || null
+        }
+      });
+    } catch (e) {
+      console.error('Error loading bot settings:', e);
+      res.status(500).json({ error: 'Błąd ładowania ustawień: ' + e.message });
+    }
+  });
+
+  router.post('/guild/:id/bot-settings', authMiddleware, async (req, res) => {
+    try {
+      const { bot_status, tickets } = req.body || {};
+
+      // Status bota (globalny) — walidacja i natychmiastowe zastosowanie
+      if (bot_status) {
+        const clean = {
+          type: ACTIVITY_TYPES[bot_status.type] !== undefined ? bot_status.type : 'watching',
+          text: String(bot_status.text || '').slice(0, 128),
+          presence: PRESENCE_STATUSES.includes(bot_status.presence) ? bot_status.presence : 'online'
+        };
+        await setBotSetting('bot_status', JSON.stringify(clean));
+        try { applyBotPresence(discordClient, clean); } catch (e) { console.error('Presence error:', e.message); }
+      }
+
+      // Limity ticketów (per serwer)
+      if (tickets) {
+        const clamp = (v, min, max, dflt) => {
+          const n = parseInt(v, 10);
+          return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+        };
+        await setTicketConfig(req.params.id, {
+          max_tickets: clamp(tickets.max_tickets, 1, 500, 50),
+          user_ticket_limit: clamp(tickets.user_ticket_limit, 0, 50, 3),
+          cooldown_minutes: clamp(tickets.cooldown_minutes, 0, 1440, 5),
+          log_channel_id: tickets.log_channel_id !== undefined ? (tickets.log_channel_id || null) : undefined
+        });
+      }
+
+      res.json({ success: true, message: 'Ustawienia zapisane!' });
+    } catch (e) {
+      console.error('Error saving bot settings:', e);
+      res.status(500).json({ error: 'Błąd zapisu ustawień: ' + e.message });
+    }
+  });
+
   // Guild stats for dashboard
   router.get('/guild/:id/stats', authMiddleware, async (req, res) => {
     const guild = discordClient.guilds.cache.get(req.params.id);
@@ -367,7 +444,13 @@ module.exports = function(discordClient) {
 
     try {
       const members = await guild.members.fetch();
-      const online = members.filter(m => m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd').size;
+      // Bot nie ma intentu GuildPresences, więc m.presence jest zawsze puste.
+      // Zamiast tego pobieramy approximate_presence_count prosto z API Discorda.
+      let online = 0;
+      try {
+        await guild.fetch(); // uzupełnia approximatePresenceCount (with_counts)
+        online = guild.approximatePresenceCount ?? 0;
+      } catch (e) { /* zostaje 0 */ }
       const bots = members.filter(m => m.user.bot).size;
       const channels = guild.channels.cache.filter(c => c.type === 0).size;
       const roles = guild.roles.cache.size - 1;

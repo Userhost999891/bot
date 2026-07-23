@@ -116,6 +116,7 @@ function setupNavigation() {
       if (section === 'lobby') loadLobbyData();
       if (section === 'boosttester') loadBoostTesterData();
       if (section === 'backup') loadBackupData();
+      if (section === 'settings') loadSettingsData();
     }
   }
 
@@ -637,8 +638,8 @@ function setupNavigation() {
             <p>${escapeHtml(cat.description || 'Brak opisu')}</p>
           </div>
           <div class="category-actions">
-            <button class="action-btn action-btn-save action-btn-sm" data-edit="${cat.id}">✏️</button>
-            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${cat.id}">🗑️</button>
+            <button class="action-btn action-btn-save action-btn-sm" data-edit="${cat.id}" title="Edytuj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${cat.id}" title="Usuń"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>
         `;
 
@@ -951,16 +952,16 @@ function setupNavigation() {
         const channelName = rewardChannelsCache.find(c => c.id === srv.channel_id);
         const card = document.createElement('div');
         card.className = 'category-card';
-        const clinkBadge = srv.clink ? ' <span class="badge" style="background: rgba(67, 181, 129, 0.2); color: #43b581; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">🔗 CLINK</span>' : ' <span class="badge" style="background: rgba(240, 71, 71, 0.15); color: #f04747; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">Brak CLINK</span>';
+        const clinkBadge = srv.clink ? ' <span class="badge" style="background: rgba(67, 181, 129, 0.2); color: #43b581; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">CLINK</span>' : ' <span class="badge" style="background: rgba(240, 71, 71, 0.15); color: #f04747; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block; vertical-align: middle;">Brak CLINK</span>';
         card.innerHTML = `
-          <span class="category-emoji">🖥️</span>
+          <span class="category-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color: var(--text-secondary);"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
           <div class="category-info">
             <h4>${escapeHtml(srv.server_name)}${clinkBadge}</h4>
             <p>ID: <code>${escapeHtml(srv.server_id)}</code> • Kanał: #${channelName ? escapeHtml(channelName.name) : srv.channel_id}</p>
           </div>
           <div class="category-actions">
-            <button class="action-btn action-btn-save action-btn-sm" data-edit="${srv.id}">✏️</button>
-            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${srv.id}">🗑️</button>
+            <button class="action-btn action-btn-save action-btn-sm" data-edit="${srv.id}" title="Edytuj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${srv.id}" title="Usuń"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>
         `;
         card.querySelector('[data-edit]').addEventListener('click', () => openEditRewardServer(srv));
@@ -1635,17 +1636,17 @@ function setupNavigation() {
           <div class="backup-card-info">
             <div class="backup-card-name">${escapeHtml(b.name)}</div>
             <div class="backup-card-meta">
-              <span>📅 ${date}</span>
-              <span>👤 ${author}</span>
-              <span>🎭 ${b.role_count} ról</span>
-              <span>📁 ${b.channel_count} kanałów</span>
-              <span>👥 ${b.member_count || 0} członków</span>
+              <span>${date}</span>
+              <span>${author}</span>
+              <span>${b.role_count} ról</span>
+              <span>${b.channel_count} kanałów</span>
+              <span>${b.member_count || 0} członków</span>
             </div>
           </div>
           <div class="backup-card-actions">
-            <button class="action-btn action-btn-download action-btn-sm" data-download="${b.id}">⬇️ Pobierz</button>
-            <button class="action-btn action-btn-restore action-btn-sm" data-restore="${b.id}">♻️ Przywróć</button>
-            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${b.id}">🗑️</button>
+            <button class="action-btn action-btn-download action-btn-sm" data-download="${b.id}">Pobierz</button>
+            <button class="action-btn action-btn-restore action-btn-sm" data-restore="${b.id}">Przywróć</button>
+            <button class="action-btn action-btn-danger action-btn-sm" data-delete="${b.id}" title="Usuń"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>`;
         card.querySelector('[data-download]').addEventListener('click', () => downloadBackup(b.id));
         card.querySelector('[data-restore]').addEventListener('click', () => openRestoreModal(b.id, b.name));
@@ -1771,6 +1772,76 @@ function setupNavigation() {
   }
 
   // =============================
+  // SETTINGS
+  // =============================
+  async function loadSettingsData() {
+    showSectionStatus('set', 'Ładowanie...', 'info');
+    try {
+      // Kanały do selecta logów
+      const chRes = await fetch(`/api/guild/${selectedGuildId}/channels`);
+      const channels = await chRes.json();
+      const logSelect = $('set-ticket-log-channel');
+      logSelect.innerHTML = '<option value="">Wyłączone</option>';
+      if (Array.isArray(channels)) {
+        channels.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.id;
+          opt.textContent = `#${ch.name}`;
+          logSelect.appendChild(opt);
+        });
+      }
+
+      const res = await fetch(`/api/guild/${selectedGuildId}/bot-settings`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      $('set-activity-type').value = data.bot_status.type || 'watching';
+      $('set-activity-text').value = data.bot_status.text || '';
+      $('set-presence').value = data.bot_status.presence || 'online';
+      $('set-max-tickets').value = data.tickets.max_tickets;
+      $('set-user-limit').value = data.tickets.user_ticket_limit;
+      $('set-cooldown').value = data.tickets.cooldown_minutes;
+      if (data.tickets.log_channel_id) logSelect.value = data.tickets.log_channel_id;
+
+      updateCustomSelects();
+    } catch (e) {
+      console.error('Error loading settings:', e);
+      showSectionStatus('set', 'Błąd ładowania ustawień: ' + e.message, 'error');
+      return;
+    }
+    hideSectionStatus('set');
+  }
+
+  async function saveSettings() {
+    try {
+      disableButtons(true);
+      const res = await fetch(`/api/guild/${selectedGuildId}/bot-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bot_status: {
+            type: $('set-activity-type').value,
+            text: $('set-activity-text').value.trim(),
+            presence: $('set-presence').value
+          },
+          tickets: {
+            max_tickets: $('set-max-tickets').value,
+            user_ticket_limit: $('set-user-limit').value,
+            cooldown_minutes: $('set-cooldown').value,
+            log_channel_id: $('set-ticket-log-channel').value || null
+          }
+        })
+      });
+      const data = await res.json();
+      showSectionStatus('set', data.message || data.error, data.success ? 'success' : 'error');
+    } catch (e) {
+      showSectionStatus('set', 'Błąd zapisu ustawień', 'error');
+    } finally {
+      disableButtons(false);
+    }
+  }
+
+  // =============================
   // EVENT LISTENERS
   // =============================
   document.addEventListener('DOMContentLoaded', () => {
@@ -1867,10 +1938,14 @@ function setupNavigation() {
       restoreDeleteExtra.addEventListener('change', () => {
         $('restore-delete-label').classList.toggle('checked', restoreDeleteExtra.checked);
         $('restore-warning-text').textContent = restoreDeleteExtra.checked
-          ? '⚠️ Uwaga: kanały i role spoza backupu zostaną trwale usunięte!'
+          ? 'Uwaga: kanały i role spoza backupu zostaną trwale usunięte!'
           : '';
       });
     }
+
+    // Settings save button
+    const saveSettingsBtn = $('save-settings-btn');
+    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
 
     setupAnnouncementsAutocomplete();
     init();

@@ -7,6 +7,7 @@
   <meta name="description" content="Panel zarządzania botem Discord — NarisMC Core">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="images/logo.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dashboard-body">
@@ -20,9 +21,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-logo">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
-          <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442z"/>
-        </svg>
+        <img src="images/logo.png" alt="NarisMC">
       </div>
       <span class="sidebar-title">NarisMC Core</span>
     </div>
@@ -82,6 +81,10 @@
       <button class="sidebar-item disabled" data-section="boosttester" id="nav-boosttester">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         <span>Boost Tester</span>
+      </button>
+      <button class="sidebar-item disabled" data-section="settings" id="nav-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Ustawienia</span>
       </button>
     </nav>
 
@@ -515,11 +518,11 @@
       <!-- HOW IT WORKS -->
       <div class="info-card">
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Jak to działa?</h3>
-        <p>1️⃣ Dodaj serwer MC (np. <strong>survival</strong>) i przypisz kanał Discord (np. <strong>#nagroda-survival</strong>)</p>
-        <p>2️⃣ W pluginie MC ustaw <code>server-id: "survival"</code> — musi pasować do ID powyżej!</p>
-        <p>3️⃣ Kliknij <strong>Wyślij wiadomość interaktywną</strong> — bot wyśle panel z przyciskami na wybrany kanał</p>
-        <p>4️⃣ Gracz klika "Odbierz" przy swoim trybie, wpisuje nick → nagroda zostaje nadana automatycznie</p>
-        <p style="margin-top: 8px; color: var(--teal);">🌐 Każdy serwer MC ma osobny przycisk i nagrodę!</p>
+        <p>1. Dodaj serwer MC (np. <strong>survival</strong>) i przypisz kanał Discord (np. <strong>#nagroda-survival</strong>)</p>
+        <p>2. W pluginie MC ustaw <code>server-id: "survival"</code> — musi pasować do ID powyżej!</p>
+        <p>3. Kliknij <strong>Wyślij wiadomość interaktywną</strong> — bot wyśle panel z przyciskami na wybrany kanał</p>
+        <p>4. Gracz klika "Odbierz" przy swoim trybie, wpisuje nick — nagroda zostaje nadana automatycznie</p>
+        <p style="margin-top: 8px; color: var(--teal);">Każdy serwer MC ma osobny przycisk i nagrodę.</p>
       </div>
     </section>
 
@@ -560,9 +563,9 @@
       <!-- HOW IT WORKS -->
       <div class="info-card" style="margin-top: 32px;">
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> O systemie ulepszeń (Boosty)</h3>
-        <p>1️⃣ Gdy ktokolwiek ulepszy (zboostuje) Twój serwer Discord, bot automatycznie wykryje to zdarzenie.</p>
-        <p>2️⃣ Wyśle estetyczną wiadomość z podziękowaniem na wybrany kanał, pokazując aktualną liczbę boostów.</p>
-        <p>3️⃣ Możesz przetestować wygląd tej wiadomości na dowolnym kanale w zakładce <strong>Boost Tester</strong> w menu po lewej stronie.</p>
+        <p>1. Gdy ktokolwiek ulepszy (zboostuje) Twój serwer Discord, bot automatycznie wykryje to zdarzenie.</p>
+        <p>2. Wyśle estetyczną wiadomość z podziękowaniem na wybrany kanał, pokazując aktualną liczbę boostów.</p>
+        <p>3. Możesz przetestować wygląd tej wiadomości na dowolnym kanale w zakładce <strong>Boost Tester</strong> w menu po lewej stronie.</p>
       </div>
     </section>
 
@@ -603,7 +606,7 @@
         <div class="config-card">
           <h3 class="config-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M12 2a10 10 0 1 0 10 10H12V2Z"/></svg> O bocie AI</h3>
           <p class="config-card-desc" style="margin-bottom: 0; line-height: 1.8;">
-            Bot gra trochę chaotycznie — celowo popełnia błędy! Ale im więcej wygrywasz, tym trudniejszy się staje. Na początku pomyli się w 50% ruchów, ale z czasem będzie się mylił coraz rzadziej. Powodzenia! 💪
+            Bot gra trochę chaotycznie — celowo popełnia błędy. Im więcej wygrywasz, tym trudniejszy się staje: na początku myli się w połowie ruchów, z czasem coraz rzadziej.
           </p>
         </div>
       </div>
@@ -664,10 +667,9 @@
       <!-- HOW IT WORKS -->
       <div class="info-card" style="margin-top: 32px;">
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Jak to działa?</h3>
-        <p>1️⃣ Wybierz kanał, na który ma trafiać wiadomość powitalna (np. <strong>#lobby</strong> lub <strong>#powitania</strong>).</p>
-        <p>2️⃣ Kliknij <strong>Zapisz Konfigurację</strong>.</p>
-        <p>3️⃣ Gdy nowy użytkownik dołączy na serwer Discord, bot automatycznie wyśle estetyczną wiadomość z jego avatarem, tekstem powitalnym i przyciskami do regulaminu oraz weryfikacji.</p>
-        <p style="margin-top: 8px; color: var(--teal);">👋 Każdy nowy gracz od razu poczuje się mile widziany!</p>
+        <p>1. Wybierz kanał, na który ma trafiać wiadomość powitalna (np. <strong>#lobby</strong> lub <strong>#powitania</strong>).</p>
+        <p>2. Kliknij <strong>Zapisz Konfigurację</strong>.</p>
+        <p>3. Gdy nowy użytkownik dołączy na serwer Discord, bot automatycznie wyśle estetyczną wiadomość z jego avatarem, tekstem powitalnym i przyciskami do regulaminu oraz weryfikacji.</p>
       </div>
     </section>
 
@@ -771,12 +773,77 @@
         </div>
       </div>
 
-      <div class="info-card" style="margin-top: 24px;">
+      <div class="info-card" style="margin-top: 24px;" id="backup-info-card">
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Jak działa przywracanie?</h3>
-        <p>✅ Bot <strong>dotwarza brakujące</strong> role, kategorie i kanały oraz nakłada zapisane uprawnienia. Domyślnie <strong>nic nie usuwa</strong> — istniejące kanały zostają nietknięte (aktualizowane są tylko ich uprawnienia).</p>
-        <p>🔗 Uprawnienia są mapowane po nazwach ról, więc działają nawet po odtworzeniu serwera od zera.</p>
-        <p>👥 Backup zapisuje też <strong>kto miał jaką rolę</strong> — przy przywracaniu bot ponadaje role tym samym członkom (po ID użytkownika), o ile nadal są na serwerze.</p>
-        <p style="color: var(--warning);">⚠️ Tryb „Pełne przywrócenie" dodatkowo <strong>usuwa</strong> kanały i role, których nie ma w backupie — używaj ostrożnie.</p>
+        <p>Bot <strong>dotwarza brakujące</strong> role, kategorie i kanały oraz nakłada zapisane uprawnienia. Domyślnie <strong>nic nie usuwa</strong> — istniejące kanały zostają nietknięte (aktualizowane są tylko ich uprawnienia).</p>
+        <p>Uprawnienia są mapowane po nazwach ról, więc działają nawet po odtworzeniu serwera od zera. Backup zapisuje też <strong>kto miał jaką rolę</strong> — przy przywracaniu bot ponadaje role tym samym członkom, o ile nadal są na serwerze.</p>
+        <p style="color: var(--warning);">Uwaga: tryb „Pełne przywrócenie" dodatkowo <strong>usuwa</strong> kanały i role, których nie ma w backupie — używaj ostrożnie.</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="section hidden" id="section-settings">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h1 class="section-title">
+            <span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+            Ustawienia
+          </h1>
+          <span class="server-badge" id="set-server-name"></span>
+        </div>
+        <p class="section-desc">Status bota, limity ticketów i logi — wszystko w jednym miejscu.</p>
+      </div>
+
+      <div class="status-bar hidden" id="set-status-bar">
+        <span id="set-status-message"></span>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-card">
+          <h3 class="config-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> Status bota</h3>
+          <p class="config-card-desc">Aktywność widoczna na Discordzie. Zmiana działa od razu i wraca po restarcie.</p>
+          <label class="modal-label">Typ aktywności</label>
+          <select class="config-select" id="set-activity-type">
+            <option value="playing">Gra w</option>
+            <option value="watching">Ogląda</option>
+            <option value="listening">Słucha</option>
+            <option value="competing">Rywalizuje w</option>
+          </select>
+          <label class="modal-label" style="margin-top: 10px;">Tekst statusu</label>
+          <input type="text" class="config-input" id="set-activity-text" placeholder="np. NarisMC Core" maxlength="128">
+          <label class="modal-label" style="margin-top: 10px;">Dostępność</label>
+          <select class="config-select" id="set-presence">
+            <option value="online">Online</option>
+            <option value="idle">Zaraz wracam</option>
+            <option value="dnd">Nie przeszkadzać</option>
+          </select>
+        </div>
+
+        <div class="config-card">
+          <h3 class="config-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg> Limity ticketów</h3>
+          <p class="config-card-desc">Kontroluj ile ticketów można otwierać. Wartość 0 wyłącza dany limit.</p>
+          <label class="modal-label">Maksymalna liczba otwartych ticketów (serwer)</label>
+          <input type="number" class="config-input" id="set-max-tickets" min="1" max="500" placeholder="50">
+          <label class="modal-label" style="margin-top: 10px;">Limit otwartych ticketów na osobę (0 = brak)</label>
+          <input type="number" class="config-input" id="set-user-limit" min="0" max="50" placeholder="3">
+          <label class="modal-label" style="margin-top: 10px;">Przerwa między ticketami w minutach (0 = brak)</label>
+          <input type="number" class="config-input" id="set-cooldown" min="0" max="1440" placeholder="5">
+        </div>
+
+        <div class="config-card">
+          <h3 class="config-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="vertical-align: middle; margin-right: 6px; position:relative; top:-2px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Logi ticketów</h3>
+          <p class="config-card-desc">Kanał, na który bot zapisuje otwarcia, odebrania i zamknięcia ticketów.</p>
+          <select class="config-select" id="set-ticket-log-channel">
+            <option value="">Wyłączone</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="action-buttons" style="margin-top: 24px;">
+        <button class="action-btn action-btn-save" id="save-settings-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Zapisz ustawienia
+        </button>
       </div>
     </section>
 
